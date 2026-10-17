@@ -2,7 +2,7 @@
 
 Aplicación local de marca blanca para una clínica veterinaria. Implementación nueva e independiente, centrada en el recorrido **cita → consulta → seguimiento → nueva reserva**. La identidad inicial «CercaVet» y todos los pacientes son ejemplos; no representan una clínica real. CercaVet es el nombre del producto; cada clínica puede configurar su propia identidad.
 
-[Abrir demo pública](https://eduardosalomonm.github.io/cercavet/) · [Código en GitHub](https://github.com/eduardosalomonm/cercavet)
+[Landing para clínicas](https://eduardosalomonm.github.io/cercavet/clinicas/) · [Abrir demo pública](https://eduardosalomonm.github.io/cercavet/) · [Código en GitHub](https://github.com/eduardosalomonm/cercavet)
 
 La demo utiliza datos ficticios y guarda los cambios únicamente en el navegador de cada visitante. No hay cuentas, servidor ni envío real de mensajes.
 
@@ -85,3 +85,7 @@ Probar este recorrido con el veterinario y observar qué necesita en cada paso. 
 ## Referencias de interacción
 
 Patrones consultados: paneles complementarios y tablas de [shadcn/ui](https://ui.shadcn.com/docs/components). La interfaz se implementa con componentes propios, diálogos HTML y React; no se ha copiado el código de esos ejemplos.
+
+## Landing para clínicas
+
+`public/clinicas/` contiene la presentación comercial con beneficios, recorrido, vista previa de marca blanca, preguntas frecuentes y acceso a la demo. Se publica en `/cercavet/clinicas/`, conservando la aplicación en `/cercavet/`. La personalización de muestra no guarda ni envía datos. La captura procede de la demo con pacientes ficticios; las integraciones y la implantación real se distinguen de lo disponible hoy. No hay formularios, testimonios ni cifras de resultados.

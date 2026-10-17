@@ -39,9 +39,15 @@ También se pueden añadir pacientes, buscar por nombre o propietario, consultar
 
 ## Marca blanca
 
-**Identidad de la clínica** permite cambiar nombre, frase, profesional, teléfono, correo, logo local (PNG/JPG/WebP, hasta 300 KB) y paleta (oliva, océano, terracota). Cambia la cabecera, la identidad visual, el título del navegador, favicon y los nuevos mensajes y resúmenes. Los mensajes ya registrados conservan su contenido histórico.
+**Identidad de la clínica** permite cambiar nombre, frase, profesional, teléfono, correo, logo local (PNG/JPG/WebP, hasta 300 KB) y paleta (bosque, océano, terracota). Cambia la cabecera, la identidad visual, el título del navegador, favicon y los nuevos mensajes y resúmenes. Los mensajes ya registrados conservan su contenido histórico.
 
 La configuración inicial está en `src/seed.ts`; las paletas y el contrato de configuración en `src/domain.ts`. La marca de la clínica es la única marca visible: no hay pie de proveedor, marca de plataforma, identificadores de servicios ni analítica.
+
+## Identidad CercaVet
+
+[Guía visual y descargas](https://eduardosalomonm.github.io/cercavet/brand/) · [Guía de uso](docs/BRAND.md). El kit contiene siete SVG con letras convertidas a contornos, más la guía y la licencia tipográfica. `scripts/generate-brand.py` permite regenerarlos.
+
+La identidad corporativa vive en `src/branding.ts`. La clínica conserva sus propios datos en `brand`: su logo sustituye al símbolo, y sin imagen se muestran sus iniciales cuando usa otro nombre. El favicon sigue la misma regla. Los datos y las identidades ya personalizadas se conservan.
 
 ## Estructura
 
@@ -69,7 +75,7 @@ La capa de dominio recibe un estado y devuelve el nuevo estado. El almacenamient
 - No hay facturación, pagos, recetas, inventario, automatizaciones ni portal de propietarios en esta primera base.
 - Se puede exportar JSON; la importación de copias y la migración desde otros sistemas quedan pendientes.
 - Un formato de datos no reconocido se muestra como error de recuperación; no se sobrescribe automáticamente.
-- No hay peticiones a servicios externos desde la aplicación. Las fuentes usan el sistema y los iconos se empaquetan localmente. El servidor de desarrollo utiliza su conexión local de recarga.
+- No hay peticiones a servicios externos desde la aplicación. Manrope se sirve localmente con su licencia OFL; Georgia usa la fuente del sistema. Los iconos se empaquetan localmente. El servidor de desarrollo utiliza su conexión local de recarga.
 - Los paquetes estándar conservan sus propias licencias dentro de sus distribuciones. La implementación nueva no reutiliza el código ni los recursos del repositorio revisado.
 
 ## Siguiente fase

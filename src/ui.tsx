@@ -5,6 +5,7 @@ import {
   type ButtonHTMLAttributes,
 } from "react";
 import { ArrowUpRight, Cat, Dog, Plus, Rabbit, X } from "lucide-react";
+import { clinicIdentity, productBrand } from "./branding.ts";
 import type { Brand, Patient } from "./domain.ts";
 
 export function Mark({
@@ -14,15 +15,18 @@ export function Mark({
   brand: Brand;
   small?: boolean;
 }) {
+  const { isProduct, initials } = clinicIdentity(brand);
   return (
-    <span className={`brand-mark ${small ? "small" : ""}`}>
+    <span aria-hidden="true" className={`brand-mark ${small ? "small" : ""} ${brand.logo ? "custom-logo" : ""}`}>
       {brand.logo ? (
         <img src={brand.logo} alt="" />
+      ) : isProduct ? (
+        <svg viewBox="0 0 64 64" fill="none">
+          <path d={productBrand.arc} stroke="currentColor" strokeWidth="9" strokeLinecap="round" />
+          <circle cx="46" cy="32" r="6" fill="var(--accent)" />
+        </svg>
       ) : (
-        <>
-          <Plus strokeWidth={2.5} />
-          <i />
-        </>
+        <span className="clinic-initials">{initials}</span>
       )}
     </span>
   );

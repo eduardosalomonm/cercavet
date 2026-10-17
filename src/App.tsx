@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { formatDate, STORAGE_KEY, themes } from "./domain.ts";
+import { clinicFavicon } from "./branding.ts";
 import { download, useClinic } from "./store.ts";
 import { AppointmentForm, FollowupForm, PatientForm } from "./forms.tsx";
 import {
@@ -81,10 +82,7 @@ export default function App() {
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", colors.primary);
     const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-    if (icon)
-      icon.href =
-        data.brand.logo ||
-        `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="14" fill="${colors.primary}"/><path d="M24 12v24M12 24h24" stroke="white" stroke-width="6" stroke-linecap="round"/></svg>`)}`;
+    if (icon) icon.href = clinicFavicon(data.brand);
   }, [data.brand, title, colors.primary]);
   const props = { data, onVisit, onBook, onFollowup };
   const selectedFollowup =

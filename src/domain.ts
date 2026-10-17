@@ -70,10 +70,10 @@ export interface ClinicState {
 export const STORAGE_KEY = "clinic.workspace.v1";
 export const themes = {
   olive: {
-    label: "Oliva",
-    primary: "#294c3c",
-    soft: "#eaf0e7",
-    accent: "#c4d69b",
+    label: "Bosque",
+    primary: "#234b42",
+    soft: "#edf2e9",
+    accent: "#d6e6b7",
   },
   ocean: {
     label: "Océano",

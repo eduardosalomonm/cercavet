@@ -1,3 +1,4 @@
+import { productBrand } from "./branding.ts";
 import { localDate, offsetDate } from "./domain.ts";
 import type { ClinicState, Patient } from "./domain.ts";
 
@@ -74,8 +75,8 @@ export function createDemo(): ClinicState {
   return {
     version: 1,
     brand: {
-      name: "CercaVet",
-      tagline: "Cuidamos de su vida contigo.",
+      name: productBrand.name,
+      tagline: productBrand.tagline,
       veterinarian: "Dra. Alba Martín",
       email: "hola@example.com",
       phone: "900 000 000",

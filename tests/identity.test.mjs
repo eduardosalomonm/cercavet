@@ -34,3 +34,28 @@ test("custom clinic identities and already recorded messages remain intact", () 
   historical.followups[0].contactedAt = new Date().toISOString();
   assert.equal(migrateDemoIdentity(historical).followups[0], historical.followups[0]);
 });
+
+test("clinic name and logo replace the product mark and favicon", async () => {
+  const { clinicIdentity, clinicFavicon } = await import("../src/branding.ts");
+  const demo = createDemo().brand;
+  assert.equal(clinicIdentity(demo).isProduct, true);
+  const own = { ...demo, name: "Clínica Alameda" };
+  assert.deepEqual(clinicIdentity(own), { isProduct: false, initials: "CA" });
+  const icon = decodeURIComponent(clinicFavicon(own).split(",")[1]);
+  assert.match(icon, />CA<\/text>/);
+  assert.doesNotMatch(icon, /<path|CercaVet/);
+  const uploaded = { ...own, logo: "data:image/png;base64,dGVzdA==" };
+  assert.equal(clinicFavicon(uploaded), uploaded.logo);
+  assert.equal(clinicIdentity({ ...demo, logo: uploaded.logo }).isProduct, false);
+});
+
+test("new tagline upgrades only the untouched demo copy", () => {
+  const demo = createDemo();
+  demo.brand.tagline = "Cuidamos de su vida contigo.";
+  assert.equal(migrateDemoIdentity(demo).brand.tagline, "Cerca, en cada cuidado.");
+  demo.brand.name = "Clínica Alameda";
+  assert.equal(migrateDemoIdentity(demo), demo);
+  demo.brand.name = "CercaVet";
+  demo.brand.tagline = "Nuestra frase personalizada";
+  assert.equal(migrateDemoIdentity(demo), demo);
+});

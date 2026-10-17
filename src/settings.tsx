@@ -53,7 +53,7 @@ export function Settings({
         eyebrow="IDENTIDAD DE LA CLÍNICA"
         title="Tu nombre. Tu manera de cuidar."
       >
-        Personaliza el espacio que verá tu equipo.
+        Tu nombre y logo aparecerán en la navegación, el icono del navegador y los resúmenes.
       </Heading>
       <div className="settings-grid">
         <form
@@ -144,9 +144,10 @@ export function Settings({
               onClick={() => set("logo", "")}
             >
               <X size={14} />
-              Usar símbolo de la clínica
+              Usar identidad sin imagen
             </button>
           )}
+          <p className="muted">Sin logo, las clínicas personalizadas muestran sus iniciales. El símbolo de CercaVet se reserva para la demo.</p>
           <fieldset className="theme-field">
             <legend>Color de la clínica</legend>
             <div>
@@ -200,6 +201,7 @@ export function Settings({
             <span>{brand.veterinarian}</span>
             <small>{brand.email}</small>
           </div>
+          <a className="brand-kit-link" href={`${import.meta.env.BASE_URL}brand/index.html`} target="_blank" rel="noreferrer">Ver identidad y descargar kit CercaVet ↗</a>
           <section className="panel compact-panel local-data">
             <ShieldCheck size={23} />
             <h3>Datos de esta demostración</h3>

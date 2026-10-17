@@ -1,20 +1,27 @@
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
 :root {
   font-family:
-    Inter,
+    "Manrope",
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
   color: #26332c;
-  background: #f7f8f4;
+  background: #f7f7f0;
   font-synthesis: none;
   font-size: 14px;
   line-height: 1.5;
-  --primary: #294c3c;
-  --primary-soft: #eaf0e7;
-  --accent: #c4d69b;
+  --primary: #234b42;
+  --primary-soft: #edf2e9;
+  --accent: #d6e6b7;
   --text: #26332c;
-  --muted: #737d75;
+  --muted: #59655c;
   --border: #e4e8df;
   --surface: #fff;
   --radius: 16px;
@@ -543,7 +550,7 @@ button:active:not(:disabled) {
   display: grid;
   place-items: center;
   transform: rotate(-15deg);
-  color: #c4d69b33;
+  color: #d6e6b733;
 }
 .overview-decoration > svg {
   width: 90px;
@@ -3134,3 +3141,10 @@ textarea::placeholder {
     visibility: visible;
   }
 }
+
+/* Product symbol and clinic logos share a slot, never a combined mark. */
+.brand-mark svg { width: 100%; height: 100%; }
+.brand-mark.custom-logo { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+.clinic-initials { font-size: 16px; font-weight: 700; letter-spacing: -.04em; }
+.brand-preview .clinic-initials { font-size: 24px; }
+.brand-kit-link { display: inline-flex; margin-top: 16px; color: var(--primary); font-size: 12px; font-weight: 650; text-underline-offset: 4px; }

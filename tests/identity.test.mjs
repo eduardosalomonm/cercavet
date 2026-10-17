@@ -13,6 +13,7 @@ function previousDemo() {
 test("existing demo receives CercaVet without losing appointments or other configuration", () => {
   const before = previousDemo();
   before.brand.theme = "ocean";
+  before.followups.push({ ...before.followups[0], id: "added-later", message: "Desde Clínica Oliva: ¿cómo sigue?" });
   const after = migrateDemoIdentity(before);
   assert.equal(after.brand.name, "CercaVet");
   assert.equal(after.brand.theme, "ocean");
@@ -20,6 +21,7 @@ test("existing demo receives CercaVet without losing appointments or other confi
   assert.equal(after.consultations, before.consultations);
   assert.equal(after.patients, before.patients);
   assert.match(after.followups[0].message, /Somos CercaVet/);
+  assert.equal(after.followups.at(-1).message, "Desde CercaVet: ¿cómo sigue?");
   assert.equal(migrateDemoIdentity(after), after);
 });
 

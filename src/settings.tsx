@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { localDate, saveBrand, themes } from "./domain.ts";
+import { validTimeZone } from "./dates.ts";
 import type { Brand, ClinicState } from "./domain.ts";
 import { download, type Commit } from "./store.ts";
 import { Button, ErrorMessage, Heading, Mark } from "./ui.tsx";
@@ -53,7 +54,8 @@ export function Settings({
         eyebrow="IDENTIDAD DE LA CLÍNICA"
         title="Tu nombre. Tu manera de cuidar."
       >
-        Tu nombre y logo aparecerán en la navegación, el icono del navegador y los resúmenes.
+        Tu nombre y logo aparecerán en la navegación, el icono del navegador y
+        los resúmenes.
       </Heading>
       <div className="settings-grid">
         <form
@@ -119,6 +121,42 @@ export function Settings({
             </label>
           </div>
           <div className="section-heading settings-divider">
+            <h2>Fechas de la clínica</h2>
+          </div>
+          <label>
+            Zona horaria
+            <select
+              value={data.timeZone}
+              onChange={(e) => {
+                const timeZone = e.target.value;
+                if (validTimeZone(timeZone))
+                  setError(
+                    commit(
+                      (s) => ({ ...s, timeZone }),
+                      "Zona horaria actualizada. Las fechas registradas se conservan.",
+                    ),
+                  );
+              }}
+            >
+              {Array.from(
+                new Set([
+                  data.timeZone,
+                  "America/Caracas",
+                  "Europe/Madrid",
+                  "UTC",
+                ]),
+              ).map((zone) => (
+                <option key={zone} value={zone}>
+                  {zone}
+                </option>
+              ))}
+            </select>
+            <span className="field-help">
+              Se guarda al cambiar. Define qué es «hoy» en la agenda y en los
+              vencimientos; no mueve las citas ni las fechas anotadas.
+            </span>
+          </label>
+          <div className="section-heading settings-divider">
             <h2>Identidad visual</h2>
             <span className="count">02</span>
           </div>
@@ -147,7 +185,10 @@ export function Settings({
               Usar identidad sin imagen
             </button>
           )}
-          <p className="muted">Sin logo, las clínicas personalizadas muestran sus iniciales. El símbolo de CercaVet se reserva para la demo.</p>
+          <p className="muted">
+            Sin logo, las clínicas personalizadas muestran sus iniciales. El
+            símbolo de CercaVet se reserva para la demo.
+          </p>
           <fieldset className="theme-field">
             <legend>Color de la clínica</legend>
             <div>
@@ -201,7 +242,14 @@ export function Settings({
             <span>{brand.veterinarian}</span>
             <small>{brand.email}</small>
           </div>
-          <a className="brand-kit-link" href={`${import.meta.env.BASE_URL}brand/index.html`} target="_blank" rel="noreferrer">Ver identidad y descargar kit CercaVet ↗</a>
+          <a
+            className="brand-kit-link"
+            href={`${import.meta.env.BASE_URL}brand/index.html`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ver identidad y descargar kit CercaVet ↗
+          </a>
           <section className="panel compact-panel local-data">
             <ShieldCheck size={23} />
             <h3>Datos de esta demostración</h3>

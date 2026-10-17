@@ -1,9 +1,11 @@
 import { productBrand } from "./branding.ts";
-import { localDate, offsetDate } from "./domain.ts";
+import { clinicToday, offsetDate } from "./domain.ts";
 import type { ClinicState, Patient } from "./domain.ts";
+import { registerVaccination } from "./vaccination-domain.ts";
 
-export function createDemo(): ClinicState {
-  const today = localDate();
+export function createDemo(timeZone = "America/Caracas"): ClinicState {
+  const today = clinicToday({ timeZone });
+  const day = (n: number) => offsetDate(n, today);
   const patients: Patient[] = [
     {
       id: "p1",
@@ -72,8 +74,10 @@ export function createDemo(): ClinicState {
       allergies: "Sin alergias registradas",
     },
   ];
-  return {
-    version: 1,
+  const state: ClinicState = {
+    version: 2,
+    timeZone,
+    vaccinations: [],
     brand: {
       name: productBrand.name,
       tagline: productBrand.tagline,
@@ -120,7 +124,7 @@ export function createDemo(): ClinicState {
       {
         id: "a5",
         patientId: "p3",
-        date: `${offsetDate(-3)}T10:00`,
+        date: `${day(-3)}T10:00`,
         duration: 30,
         reason: "Control de movilidad",
         status: "completed",
@@ -128,7 +132,7 @@ export function createDemo(): ClinicState {
       {
         id: "a6",
         patientId: "p4",
-        date: `${offsetDate(-2)}T11:00`,
+        date: `${day(-2)}T11:00`,
         duration: 30,
         reason: "Revisión general",
         status: "completed",
@@ -136,7 +140,7 @@ export function createDemo(): ClinicState {
       {
         id: "a7",
         patientId: "p2",
-        date: `${offsetDate(1)}T09:30`,
+        date: `${day(1)}T09:30`,
         duration: 30,
         reason: "Control de peso",
         status: "confirmed",
@@ -151,8 +155,8 @@ export function createDemo(): ClinicState {
         plan: "Seguir las indicaciones entregadas en consulta. Anotar los cambios para comentarlos en la próxima revisión.",
         weight: "8.4",
         followupDate: today,
-        nextVisitDate: offsetDate(7),
-        completedAt: `${offsetDate(-3)}T10:30:00`,
+        nextVisitDate: day(7),
+        completedAt: `${day(-3)}T10:30:00`,
       },
       {
         id: "c2",
@@ -162,13 +166,14 @@ export function createDemo(): ClinicState {
         plan: "Mantener el registro de hábitos acordado en consulta y compartirlo en el seguimiento.",
         weight: "4.2",
         followupDate: today,
-        nextVisitDate: offsetDate(14),
-        completedAt: `${offsetDate(-2)}T11:30:00`,
+        nextVisitDate: day(14),
+        completedAt: `${day(-2)}T11:30:00`,
       },
     ],
     followups: [
       {
         id: "f1",
+        source: "consultation",
         consultationId: "c1",
         patientId: "p3",
         dueDate: today,
@@ -180,6 +185,7 @@ export function createDemo(): ClinicState {
       },
       {
         id: "f2",
+        source: "consultation",
         consultationId: "c2",
         patientId: "p4",
         dueDate: today,
@@ -194,4 +200,54 @@ export function createDemo(): ClinicState {
     ],
     drafts: {},
   };
+  return seedVaccinations(state, ["p3", "p2", "p1", "p4"]);
+}
+
+function seedVaccinations(
+  state: ClinicState,
+  patientIds: string[],
+): ClinicState {
+  const today = clinicToday(state);
+  const offsets = [-4, 0, 7, 45];
+  return patientIds.reduce(
+    (current, patientId, i) =>
+      registerVaccination(current, {
+        id: `demo-vaccine-${i + 1}`,
+        patientId,
+        name: i % 2 === 0 ? "Polivalente · ejemplo" : "Vacuna felina · ejemplo",
+        lot: `DEMO-2026-${i + 1}`,
+        administeredOn: offsetDate(-90 - i * 5, today),
+        nextDueOn: offsetDate(offsets[i], today),
+      }),
+    state,
+  );
+}
+
+export function addVaccinationExamples(state: ClinicState): ClinicState {
+  if (state.vaccinations.length) return state;
+  const names = ["Bruno", "Nina", "Milo", "Lúa"];
+  const patients: Patient[] = names.map((name, i) => ({
+    id: `demo-vaccine-patient-${i + 1}`,
+    name: `${name} · ejemplo`,
+    species: i % 2 === 0 ? "Perro" : "Gato",
+    breed: "",
+    age: "",
+    owner: "Familia de ejemplo",
+    phone: "",
+    email: "",
+    allergies: "",
+  }));
+  if (
+    patients.some((p) =>
+      state.patients.some((existing) => existing.id === p.id),
+    )
+  ) {
+    throw new Error(
+      "Ya existen pacientes de este ejemplo. Registra sus vacunas desde la ficha.",
+    );
+  }
+  return seedVaccinations(
+    { ...state, patients: [...state.patients, ...patients] },
+    patients.map((p) => p.id),
+  );
 }

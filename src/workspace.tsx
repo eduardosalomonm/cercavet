@@ -12,8 +12,16 @@ import {
   Plus,
   Search,
   Stethoscope,
+  Syringe,
 } from "lucide-react";
-import { formatDate, localDate, offsetDate, statusLabels } from "./domain.ts";
+import {
+  clinicToday,
+  formatDate,
+  localDate,
+  offsetDate,
+  statusLabels,
+} from "./domain.ts";
+import { vaccinationStatus } from "./vaccination-domain.ts";
 import type { Appointment, ClinicState, Followup, Patient } from "./domain.ts";
 import { Badge, Button, Empty, Heading, PetIcon, TextLink } from "./ui.tsx";
 
@@ -85,8 +93,11 @@ export function FollowupCard({
   onOpen: () => void;
 }) {
   const p = data.patients.find((p) => p.id === followup.patientId)!;
+  const vaccine = data.vaccinations.find(
+    (v) => v.id === followup.vaccinationId,
+  );
   const overdue =
-    followup.dueDate < localDate() && followup.status !== "closed";
+    followup.dueDate < clinicToday(data) && followup.status !== "closed";
   return (
     <button className="followup-card" onClick={onOpen}>
       <div className="followup-card-top">
@@ -97,10 +108,19 @@ export function FollowupCard({
         </div>
         <ArrowUpRight size={18} />
       </div>
+      {vaccine && (
+        <span className="followup-origin">
+          <Syringe size={14} />
+          {vaccine.name}
+        </span>
+      )}
       <p className="followup-excerpt">
-        {followup.status === "replied" || followup.status === "closed"
-          ? followup.response
-          : "Un pequeño mensaje para saber cómo sigue."}
+        {followup.closeReason === "dose-recorded"
+          ? "Dosis siguiente registrada. Historial conservado."
+          : followup.response ||
+            (vaccine
+              ? "Organiza el siguiente paso de su vacunación."
+              : "Un pequeño mensaje para saber cómo sigue.")}
       </p>
       <div className="followup-card-bottom">
         <Badge
@@ -116,7 +136,7 @@ export function FollowupCard({
         </Badge>
         <span className={overdue ? "overdue" : ""}>
           {overdue ? "Vencido · " : ""}
-          {followup.dueDate === localDate()
+          {followup.dueDate === clinicToday(data)
             ? "Hoy"
             : formatDate(followup.dueDate)}
         </span>
@@ -131,15 +151,19 @@ export function Today({
   onFollowup,
   onBook,
   onNavigate,
-}: WorkspaceProps & { onNavigate: (view: "agenda" | "followups") => void }) {
+}: WorkspaceProps & {
+  onNavigate: (view: "agenda" | "followups" | "vaccinations") => void;
+}) {
   const appointments = data.appointments
-    .filter((a) => a.date.startsWith(localDate()) && a.status !== "cancelled")
+    .filter(
+      (a) => a.date.startsWith(clinicToday(data)) && a.status !== "cancelled",
+    )
     .sort((a, b) => a.date.localeCompare(b.date));
   const followups = data.followups
     .filter((f) => f.status !== "closed")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const toContact = followups.filter(
-    (f) => f.dueDate <= localDate() && f.status === "pending",
+    (f) => f.dueDate <= clinicToday(data) && f.status === "pending",
   ).length;
   const ready = followups.filter((f) => f.status === "replied").length;
   return (
@@ -197,6 +221,24 @@ export function Today({
           </button>
         </div>
       </section>
+      <button
+        className="vaccine-reminder"
+        onClick={() => onNavigate("vaccinations")}
+      >
+        <Syringe size={21} />
+        <span>
+          <strong>Vacunas y próximas dosis</strong>
+          <small>
+            {
+              data.vaccinations.filter((v) =>
+                ["overdue", "today"].includes(vaccinationStatus(data, v)),
+              ).length
+            }{" "}
+            por revisar hoy · Consulta los vencimientos y su seguimiento
+          </small>
+        </span>
+        <ArrowRight size={18} />
+      </button>
       <div className="today-grid">
         <section className="panel">
           <div className="panel-heading">
@@ -288,7 +330,7 @@ export function Today({
 }
 
 export function Agenda({ data, onVisit, onBook }: WorkspaceProps) {
-  const [date, setDate] = useState(localDate());
+  const [date, setDate] = useState(clinicToday(data));
   const [status, setStatus] = useState("all");
   const weekStart = new Date(`${date}T12:00:00`);
   weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
@@ -331,7 +373,10 @@ export function Agenda({ data, onVisit, onBook }: WorkspaceProps) {
             >
               <ChevronRight />
             </button>
-            <Button variant="secondary" onClick={() => setDate(localDate())}>
+            <Button
+              variant="secondary"
+              onClick={() => setDate(clinicToday(data))}
+            >
               Hoy
             </Button>
           </div>
@@ -368,7 +413,7 @@ export function Agenda({ data, onVisit, onBook }: WorkspaceProps) {
                     ? `${count} ${count === 1 ? "cita" : "citas"}`
                     : "Libre"}
                 </small>
-                {day === localDate() && <i />}
+                {day === clinicToday(data) && <i />}
               </button>
             );
           })}
@@ -558,7 +603,8 @@ export function Followups({ data, onFollowup }: WorkspaceProps) {
       </div>
       {!followups.length && (
         <Empty title="Todo al día en esta sección">
-          Los seguimientos se crean al finalizar una consulta.
+          Los seguimientos se crean al finalizar una consulta o registrar una
+          vacuna.
         </Empty>
       )}
       <p className="page-note">
@@ -575,11 +621,13 @@ export function PatientDetails({
   patient,
   onVisit,
   onBook,
+  onVaccinations,
 }: {
   data: ClinicState;
   patient: Patient;
   onVisit: (id: string) => void;
   onBook: () => void;
+  onVaccinations: () => void;
 }) {
   const appointments = data.appointments
     .filter((a) => a.patientId === patient.id)
@@ -617,6 +665,13 @@ export function PatientDetails({
       <Button onClick={onBook}>
         <CalendarPlus size={17} />
         Reservar cita para {patient.name}
+      </Button>
+      <Button variant="secondary" onClick={onVaccinations}>
+        <Syringe size={17} />
+        Vacunas de {patient.name}
+        <span className="count">
+          {data.vaccinations.filter((v) => v.patientId === patient.id).length}
+        </span>
       </Button>
       <div className="section-heading">
         <h3>Historial de visitas</h3>

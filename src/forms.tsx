@@ -15,7 +15,7 @@ import {
   closeFollowup,
   contactFollowup,
   formatDate,
-  localDate,
+  clinicToday,
   offsetDate,
   replyFollowup,
 } from "./domain.ts";
@@ -40,7 +40,13 @@ export function AppointmentForm({
   const consultation = data.consultations.find(
     (c) => c.id === followup?.consultationId,
   );
-  const proposed = consultation?.nextVisitDate || offsetDate(1);
+  const vaccine = data.vaccinations.find(
+    (v) => v.id === followup?.vaccinationId,
+  );
+  const proposed =
+    vaccine?.nextDueOn ||
+    consultation?.nextVisitDate ||
+    offsetDate(1, clinicToday(data));
   const [error, setError] = useState("");
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,7 +61,7 @@ export function AppointmentForm({
           ...(followupId ? { previousFollowupId: followupId } : {}),
         }),
       followupId
-        ? "Revisión reservada y vinculada a la consulta anterior."
+        ? "Revisión reservada y vinculada al seguimiento."
         : "Cita añadida a la agenda.",
     );
     setError(error);
@@ -67,7 +73,11 @@ export function AppointmentForm({
         <div className="info-box">
           <CalendarPlus size={19} />
           <div>
-            <strong>Una visita que continúa la anterior</strong>
+            <strong>
+              {vaccine
+                ? "Una revisión para su próxima dosis"
+                : "Una visita que continúa la anterior"}
+            </strong>
             <p>
               La revisión quedará vinculada al seguimiento y al historial del
               paciente.
@@ -99,13 +109,13 @@ export function AppointmentForm({
           <input
             name="date"
             type="date"
-            min={localDate()}
+            min={clinicToday(data)}
             defaultValue={
               followupId
-                ? proposed < localDate()
-                  ? localDate()
+                ? proposed < clinicToday(data)
+                  ? clinicToday(data)
                   : proposed
-                : localDate()
+                : clinicToday(data)
             }
             required
           />
@@ -145,7 +155,13 @@ export function AppointmentForm({
           name="reason"
           maxLength={150}
           placeholder="Ej. Revisión general"
-          defaultValue={followupId ? "Revisión de seguimiento" : ""}
+          defaultValue={
+            vaccine
+              ? `Revisión de vacunación: ${vaccine.name}`
+              : followupId
+                ? "Revisión de seguimiento"
+                : ""
+          }
           required
         />
       </label>
@@ -279,7 +295,11 @@ export function FollowupForm({
   const patient = data.patients.find((p) => p.id === followup.patientId)!;
   const consultation = data.consultations.find(
     (c) => c.id === followup.consultationId,
-  )!;
+  );
+  const vaccine = data.vaccinations.find(
+    (v) => v.id === followup.vaccinationId,
+  );
+  const nextVisitDate = vaccine?.nextDueOn || consultation?.nextVisitDate;
   const [message, setMessage] = useState(followup.message);
   const [response, setResponse] = useState("");
   const [outcome, setOutcome] = useState<"well" | "review">("well");
@@ -307,15 +327,51 @@ export function FollowupForm({
         </Badge>
       </div>
       <div className="note-box">
-        <span className="eyebrow">ÚLTIMA CONSULTA</span>
-        <p>{consultation.summary}</p>
-        <button
-          className="inline-button"
-          onClick={() => onVisit(consultation.appointmentId)}
-        >
-          Ver consulta <ArrowRight size={14} />
-        </button>
+        <span className="eyebrow">
+          {vaccine ? "SEGUIMIENTO DE VACUNACIÓN" : "ÚLTIMA CONSULTA"}
+        </span>
+        <p>
+          {vaccine
+            ? `${vaccine.name} · lote ${vaccine.lot}`
+            : consultation?.summary}
+        </p>
+        {vaccine && (
+          <p>
+            Aplicada: {formatDate(vaccine.administeredOn)} · próxima dosis:{" "}
+            {formatDate(vaccine.nextDueOn)}.
+          </p>
+        )}
+        {consultation && (
+          <button
+            className="inline-button"
+            onClick={() => onVisit(consultation.appointmentId)}
+          >
+            Ver consulta <ArrowRight size={14} />
+          </button>
+        )}
       </div>
+      {followup.closeReason === "dose-recorded" && (
+        <div className="info-box">
+          <CheckCheck size={20} />
+          <div>
+            <p>
+              La dosis siguiente ya está registrada. Este seguimiento se
+              conserva cerrado; el nuevo registro tiene su propio seguimiento.
+            </p>
+            {followup.newAppointmentId && (
+              <>
+                <p>La cita vinculada se conserva en su estado actual.</p>
+                <button
+                  className="inline-button"
+                  onClick={() => onVisit(followup.newAppointmentId!)}
+                >
+                  Ver cita vinculada <ArrowRight size={14} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {followup.status === "pending" && (
         <>
           <label>
@@ -386,7 +442,9 @@ export function FollowupForm({
             />
           </label>
           <fieldset className="choice-field">
-            <legend>Evolución comunicada</legend>
+            <legend>
+              {vaccine ? "Siguiente paso comunicado" : "Evolución comunicada"}
+            </legend>
             <label>
               <input
                 type="radio"
@@ -394,7 +452,9 @@ export function FollowupForm({
                 checked={outcome === "well"}
                 onChange={() => setOutcome("well")}
               />
-              Evoluciona bien
+              {vaccine
+                ? "Sin revisión solicitada por ahora"
+                : "Evoluciona bien"}
             </label>
             <label>
               <input
@@ -403,7 +463,7 @@ export function FollowupForm({
                 checked={outcome === "review"}
                 onChange={() => setOutcome("review")}
               />
-              Necesita revisión
+              {vaccine ? "Organizar revisión" : "Necesita revisión"}
             </label>
           </fieldset>
           <div className="form-actions">
@@ -416,27 +476,31 @@ export function FollowupForm({
       )}
       {(followup.status === "replied" || followup.status === "closed") && (
         <>
-          <div
-            className={`response-box ${followup.outcome === "review" ? "attention" : ""}`}
-          >
-            <Badge
-              tone={followup.outcome === "review" ? "warning" : "completed"}
+          {followup.response && (
+            <div
+              className={`response-box ${followup.outcome === "review" ? "attention" : ""}`}
             >
-              {followup.outcome === "review"
-                ? "Necesita revisión"
-                : "Evoluciona bien"}
-            </Badge>
-            <p>“{followup.response}”</p>
-            <span>{patient.owner}</span>
-          </div>
+              <Badge
+                tone={followup.outcome === "review" ? "warning" : "completed"}
+              >
+                {followup.outcome === "review"
+                  ? vaccine
+                    ? "Organizar revisión"
+                    : "Necesita revisión"
+                  : vaccine
+                    ? "Respuesta registrada"
+                    : "Evoluciona bien"}
+              </Badge>
+              <p>“{followup.response}”</p>
+              <span>{patient.owner}</span>
+            </div>
+          )}
           {followup.status === "replied" && (
             <>
-              {consultation.nextVisitDate && (
+              {nextVisitDate && (
                 <p className="muted">
                   Revisión propuesta:{" "}
-                  <strong>
-                    {formatDate(consultation.nextVisitDate, true)}
-                  </strong>
+                  <strong>{formatDate(nextVisitDate, true)}</strong>
                 </p>
               )}
               <Button onClick={onBook}>
@@ -474,31 +538,32 @@ export function FollowupForm({
               )}
             </>
           )}
-          {followup.status === "closed" && (
-            <div className="info-box">
-              <CheckCheck size={20} />
-              <div>
-                <strong>
-                  {followup.newAppointmentId
-                    ? "El cuidado continúa"
-                    : "Seguimiento cerrado"}
-                </strong>
-                <p>
-                  {followup.newAppointmentId
-                    ? "La nueva visita ya está en la agenda y vinculada a este seguimiento."
-                    : "La respuesta queda guardada en el historial."}
-                </p>
-                {followup.newAppointmentId && (
-                  <button
-                    className="inline-button"
-                    onClick={() => onVisit(followup.newAppointmentId!)}
-                  >
-                    Ver nueva reserva <ArrowRight size={14} />
-                  </button>
-                )}
+          {followup.status === "closed" &&
+            followup.closeReason !== "dose-recorded" && (
+              <div className="info-box">
+                <CheckCheck size={20} />
+                <div>
+                  <strong>
+                    {followup.newAppointmentId
+                      ? "El cuidado continúa"
+                      : "Seguimiento cerrado"}
+                  </strong>
+                  <p>
+                    {followup.newAppointmentId
+                      ? "La nueva visita ya está en la agenda y vinculada a este seguimiento."
+                      : "La respuesta queda guardada en el historial."}
+                  </p>
+                  {followup.newAppointmentId && (
+                    <button
+                      className="inline-button"
+                      onClick={() => onVisit(followup.newAppointmentId!)}
+                    >
+                      Ver nueva reserva <ArrowRight size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </>
       )}
       <ErrorMessage message={error} />

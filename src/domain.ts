@@ -1,3 +1,19 @@
+import {
+  clinicToday,
+  localDate,
+  offsetDate,
+  validDay,
+  validTimeZone,
+} from "./dates.ts";
+import { validateVaccinationState } from "./vaccination-domain.ts";
+export {
+  clinicToday,
+  localDate,
+  offsetDate,
+  formatDate,
+  validDay,
+} from "./dates.ts";
+
 export type Theme = "olive" | "ocean" | "clay";
 export interface Brand {
   name: string;
@@ -43,9 +59,8 @@ export interface Consultation extends VisitNotes {
   appointmentId: string;
   completedAt: string;
 }
-export interface Followup {
+interface FollowupBase {
   id: string;
-  consultationId: string;
   patientId: string;
   dueDate: string;
   status: "pending" | "contacted" | "replied" | "closed";
@@ -56,14 +71,39 @@ export interface Followup {
   repliedAt?: string;
   closedAt?: string;
   newAppointmentId?: string;
+  closeReason?: "dose-recorded";
+}
+export type Followup = FollowupBase &
+  (
+    | { source: "consultation"; consultationId: string; vaccinationId?: never }
+    | { source: "vaccination"; vaccinationId: string; consultationId?: never }
+  );
+export interface Vaccination {
+  id: string;
+  patientId: string;
+  name: string;
+  lot: string;
+  administeredOn: string;
+  nextDueOn: string;
+  consultationId?: string;
+  previousDoseId?: string;
+  createdAt: string;
+  corrections: {
+    at: string;
+    reason: string;
+    administeredOn: string;
+    nextDueOn: string;
+  }[];
 }
 export interface ClinicState {
-  version: 1;
+  version: 2;
+  timeZone: string;
   brand: Brand;
   patients: Patient[];
   appointments: Appointment[];
   consultations: Consultation[];
   followups: Followup[];
+  vaccinations: Vaccination[];
   drafts: Record<string, VisitNotes>;
 }
 
@@ -94,41 +134,18 @@ export const statusLabels: Record<AppointmentStatus, string> = {
   completed: "Finalizada",
   cancelled: "Cancelada",
 };
-export function localDate(date = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
-}
-export function offsetDate(days: number, from = localDate()): string {
-  const date = new Date(`${from}T12:00:00`);
-  date.setDate(date.getDate() + days);
-  return localDate(date);
-}
-export function formatDate(value: string, long = false): string {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: long ? "long" : "short",
-    ...(long ? { weekday: "long" as const } : {}),
-  }).format(new Date(value.length === 10 ? `${value}T12:00:00` : value));
-}
-export function validDay(value: string): boolean {
-  return (
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    Number.isFinite(Date.parse(`${value}T12:00:00`)) &&
-    localDate(new Date(`${value}T12:00:00`)) === value
-  );
-}
 const id = () => crypto.randomUUID();
 function requireValue(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
-export function blankNotes(): VisitNotes {
+export function blankNotes(today = localDate()): VisitNotes {
   return {
     summary: "",
     findings: "",
     plan: "",
     weight: "",
-    followupDate: offsetDate(2),
-    nextVisitDate: offsetDate(14),
+    followupDate: offsetDate(2, today),
+    nextVisitDate: offsetDate(14, today),
   };
 }
 
@@ -147,7 +164,7 @@ export function bookAppointment(
     "Indica una fecha y una hora válidas.",
   );
   requireValue(
-    input.date.slice(0, 10) >= localDate(),
+    input.date.slice(0, 10) >= clinicToday(state),
     "La reserva debe ser para hoy o para una fecha posterior.",
   );
   requireValue(input.reason.trim(), "Indica el motivo de la cita.");
@@ -258,7 +275,7 @@ export function finishConsultation(
     "Completa la valoración y las instrucciones para el propietario.",
   );
   requireValue(
-    validDay(notes.followupDate) && notes.followupDate >= localDate(),
+    validDay(notes.followupDate) && notes.followupDate >= clinicToday(state),
     "El seguimiento debe ser para hoy o una fecha posterior.",
   );
   requireValue(
@@ -283,6 +300,7 @@ export function finishConsultation(
   const patient = state.patients.find((p) => p.id === appointment.patientId)!;
   const followup: Followup = {
     id: id(),
+    source: "consultation",
     consultationId: consultation.id,
     patientId: patient.id,
     dueDate: notes.followupDate,
@@ -392,7 +410,7 @@ export function cancelAppointment(
       a.id === appointmentId ? { ...a, status: "cancelled" } : a,
     ),
     followups: state.followups.map((f) =>
-      f.newAppointmentId === appointmentId
+      f.newAppointmentId === appointmentId && f.closeReason !== "dose-recorded"
         ? {
             ...f,
             status: "replied",
@@ -462,8 +480,21 @@ export function parseState(raw: string): ClinicState {
   const strings = (v: unknown, keys: string[]) =>
     obj(v) && keys.every((k) => typeof v[k] === "string");
   requireValue(
-    obj(x) && x.version === 1,
+    obj(x) && (x.version === 1 || x.version === 2),
     "El formato de los datos guardados no es compatible.",
+  );
+  if (x.version === 1) {
+    // Existing clinic records stay intact; example vaccines are never injected into them.
+    x.version = 2;
+    x.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    x.vaccinations = [];
+    if (Array.isArray(x.followups)) {
+      x.followups = x.followups.map((f) => ({ ...f, source: "consultation" }));
+    }
+  }
+  requireValue(
+    validTimeZone(x.timeZone),
+    "La zona horaria guardada no es válida.",
   );
   requireValue(
     strings(x.brand, [
@@ -532,7 +563,6 @@ export function parseState(raw: string): ClinicState {
         (f) =>
           strings(f, [
             "id",
-            "consultationId",
             "patientId",
             "dueDate",
             "status",
@@ -540,6 +570,12 @@ export function parseState(raw: string): ClinicState {
             "response",
             "outcome",
           ]) &&
+          ((f.source === "consultation" &&
+            typeof f.consultationId === "string" &&
+            f.vaccinationId === undefined) ||
+            (f.source === "vaccination" &&
+              typeof f.vaccinationId === "string" &&
+              f.consultationId === undefined)) &&
           validDay(f.dueDate) &&
           ["pending", "contacted", "replied", "closed"].includes(f.status),
       ),
@@ -560,9 +596,18 @@ export function parseState(raw: string): ClinicState {
       state.followups.every(
         (f) =>
           state.patients.some((p) => p.id === f.patientId) &&
-          state.consultations.some((c) => c.id === f.consultationId),
+          (f.source === "vaccination" ||
+            state.consultations.some(
+              (c) =>
+                c.id === f.consultationId &&
+                state.appointments.some(
+                  (a) =>
+                    a.id === c.appointmentId && a.patientId === f.patientId,
+                ),
+            )),
       ),
     "Hay registros incompletos en los datos guardados.",
   );
+  validateVaccinationState(state);
   return state;
 }

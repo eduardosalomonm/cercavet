@@ -13,9 +13,10 @@ import {
   Plus,
   Settings2,
   ShieldCheck,
+  Syringe,
   X,
 } from "lucide-react";
-import { formatDate, STORAGE_KEY, themes } from "./domain.ts";
+import { clinicToday, formatDate, STORAGE_KEY, themes } from "./domain.ts";
 import { clinicFavicon } from "./branding.ts";
 import { download, useClinic } from "./store.ts";
 import { AppointmentForm, FollowupForm, PatientForm } from "./forms.tsx";
@@ -28,10 +29,17 @@ import {
 } from "./workspace.tsx";
 import { Visit } from "./consultation.tsx";
 import { Settings } from "./settings.tsx";
+import { Vaccinations } from "./vaccinations.tsx";
 import { Button, ErrorMessage, Mark, Modal } from "./ui.tsx";
 
 type View =
-  "today" | "agenda" | "patients" | "followups" | "settings" | "visit";
+  | "today"
+  | "agenda"
+  | "patients"
+  | "followups"
+  | "vaccinations"
+  | "settings"
+  | "visit";
 type Overlay =
   | { type: "appointment"; patientId?: string; followupId?: string }
   | { type: "patient" }
@@ -44,6 +52,7 @@ const navigation = [
   { id: "today" as const, label: "Hoy", icon: LayoutDashboard },
   { id: "agenda" as const, label: "Agenda", icon: CalendarDays },
   { id: "patients" as const, label: "Pacientes", icon: PawPrint },
+  { id: "vaccinations" as const, label: "Vacunas", icon: Syringe },
   { id: "followups" as const, label: "Seguimientos", icon: MessageCircle },
 ];
 export default function App() {
@@ -51,6 +60,7 @@ export default function App() {
   const [view, setView] = useState<View>("today");
   const [appointmentId, setAppointmentId] = useState("");
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [vaccinationPatientId, setVaccinationPatientId] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [resetError, setResetError] = useState("");
   const colors = themes[data.brand.theme];
@@ -65,6 +75,7 @@ export default function App() {
   ).length;
   function navigate(next: View) {
     setView(next);
+    if (next === "vaccinations") setVaccinationPatientId("");
     setMobileMenu(false);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -76,6 +87,11 @@ export default function App() {
   const onBook = (patientId?: string) =>
     setOverlay({ type: "appointment", patientId });
   const onFollowup = (id: string) => setOverlay({ type: "followup", id });
+  const onVaccinations = (patientId: string) => {
+    setOverlay(null);
+    navigate("vaccinations");
+    setVaccinationPatientId(patientId);
+  };
   useEffect(() => {
     document.title = `${title} · ${data.brand.name}`;
     document
@@ -264,7 +280,7 @@ export default function App() {
           </div>
           <div className="topbar-right">
             <span className="today-label">
-              {formatDate(new Date().toISOString(), true)}
+              {formatDate(clinicToday(data), true)}
             </span>
             <span className="topbar-divider" />
             <span className="profile-avatar">
@@ -289,6 +305,15 @@ export default function App() {
               data={data}
               onAdd={() => setOverlay({ type: "patient" })}
               onPatient={(p) => setOverlay({ type: "patientDetail", id: p.id })}
+            />
+          )}
+          {view === "vaccinations" && (
+            <Vaccinations
+              key={vaccinationPatientId}
+              data={data}
+              commit={commit}
+              onFollowup={onFollowup}
+              initialPatientId={vaccinationPatientId}
             />
           )}
           {view === "followups" && <Followups {...props} />}
@@ -365,6 +390,7 @@ export default function App() {
             data={data}
             patient={selectedPatient}
             onBook={() => onBook(selectedPatient.id)}
+            onVaccinations={() => onVaccinations(selectedPatient.id)}
             onVisit={onVisit}
           />
         </Modal>
@@ -390,7 +416,7 @@ export default function App() {
       {overlay?.type === "reset" && (
         <Modal
           title="Restaurar datos de ejemplo"
-          description="Se eliminarán las citas, pacientes y consultas creados en esta demostración. Se conservará la identidad de la clínica."
+          description="Se sustituirán las citas, pacientes, consultas, vacunas y seguimientos de esta demostración. Se conservará la identidad de la clínica."
           onClose={() => setOverlay(null)}
         >
           <ErrorMessage message={resetError} />
@@ -457,6 +483,13 @@ export default function App() {
               </div>
             </li>
           </ol>
+          <div className="note-box">
+            <strong>También puedes probar las vacunas</strong>
+            <p>
+              Abre Vacunas: hay próximas dosis vencidas, para hoy y futuras.
+              Registra una aplicación o continúa su seguimiento.
+            </p>
+          </div>
           <div className="simulation-note">
             <ShieldCheck size={19} />
             <p>

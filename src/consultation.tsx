@@ -15,7 +15,7 @@ import {
   cancelAppointment,
   finishConsultation,
   formatDate,
-  localDate,
+  clinicToday,
   saveDraft,
   startConsultation,
   statusLabels,
@@ -43,13 +43,16 @@ export function Visit({
     (c) => c.appointmentId === appointmentId,
   );
   const followup = data.followups.find(
-    (f) => f.consultationId === consultation?.id,
+    (f) =>
+      f.source === "consultation" &&
+      !!consultation &&
+      f.consultationId === consultation.id,
   );
   const previousFollowup = data.followups.find(
     (f) => f.id === appointment.previousFollowupId,
   );
   const [notes, setNotes] = useState<VisitNotes>(
-    data.drafts[appointmentId] || consultation || blankNotes(),
+    data.drafts[appointmentId] || consultation || blankNotes(clinicToday(data)),
   );
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -280,7 +283,7 @@ export function Visit({
                   Fecha de seguimiento
                   <input
                     type="date"
-                    min={localDate()}
+                    min={clinicToday(data)}
                     value={notes.followupDate}
                     onChange={(e) => change("followupDate", e.target.value)}
                     required
@@ -290,7 +293,7 @@ export function Visit({
                   Revisión propuesta <small>(opcional)</small>
                   <input
                     type="date"
-                    min={notes.followupDate || localDate()}
+                    min={notes.followupDate || clinicToday(data)}
                     value={notes.nextVisitDate}
                     onChange={(e) => change("nextVisitDate", e.target.value)}
                   />

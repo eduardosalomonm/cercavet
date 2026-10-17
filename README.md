@@ -37,6 +37,17 @@ npm run build
 
 También se pueden añadir pacientes, buscar por nombre o propietario, consultar su historial, filtrar la agenda y descargar el resumen de una consulta en texto.
 
+## Probar vacunaciones
+
+1. Abrir **Vacunas**: hay cuatro ejemplos con próximas dosis vencidas, para hoy, en siete días y más adelante. Si ya habías usado la demo, **Cargar ejemplos de vacunas** añade cuatro pacientes ficticios sin borrar tus datos.
+2. **Registrar vacuna** guarda paciente, vacuna, lote, fecha de aplicación y próxima dosis. Puede asociarse a una consulta del mismo paciente, pero no es obligatorio.
+3. **Ver seguimiento** abre el único seguimiento de esa dosis. Registrar contacto de prueba, respuesta y revisión utiliza el mismo recorrido que una consulta.
+4. **Registrar próxima dosis** conserva el registro anterior y cierra su seguimiento. La nueva aplicación tiene un nuevo vencimiento y su propio seguimiento. Reservar una revisión, por sí solo, no confirma la aplicación.
+5. **Corregir fechas** exige un motivo, conserva los valores anteriores y actualiza el mismo seguimiento. Los mensajes ya registrados y las citas reservadas no cambian.
+6. Recargar mantiene registros, correcciones y relaciones. Los filtros separan vencidas, hoy, próximos 30 días, más adelante e histórico.
+
+Las fechas las indica el veterinario; no se calculan pautas médicas. La zona horaria se configura en **Identidad de la clínica**. Las demos nuevas usan `America/Caracas`; la actualización de datos antiguos conserva la zona del dispositivo para mantener la interpretación anterior. «Vencimiento» se refiere a la próxima dosis, no a caducidad de existencias.
+
 ## Marca blanca
 
 **Identidad de la clínica** permite cambiar nombre, frase, profesional, teléfono, correo, logo local (PNG/JPG/WebP, hasta 300 KB) y paleta (bosque, océano, terracota). Cambia la cabecera, la identidad visual, el título del navegador, favicon y los nuevos mensajes y resúmenes. Los mensajes ya registrados conservan su contenido histórico.
@@ -52,6 +63,8 @@ La identidad corporativa vive en `src/branding.ts`. La clínica conserva sus pro
 ## Estructura
 
 - `src/domain.ts`: modelo y transiciones del recorrido, validación de datos y configuración.
+- `src/vaccination-domain.ts` y `src/vaccinations.tsx`: vacunas, vencimientos, correcciones y seguimiento único por aplicación.
+- `src/dates.ts`: fechas de calendario y día actual según la zona horaria de la clínica.
 - `src/seed.ts`: datos ficticios, con fechas relativas al primer arranque o reinicio.
 - `src/store.ts`: almacenamiento local, avisos de guardado, sincronización básica entre pestañas y exportación.
 - `src/App.tsx`: navegación, ventanas y aplicación de la identidad.
@@ -60,14 +73,14 @@ La identidad corporativa vive en `src/branding.ts`. La clínica conserva sus pro
 - `src/forms.tsx`: alta de paciente, reserva y seguimiento.
 - `src/settings.tsx`: identidad y herramientas de demostración.
 - `src/ui.tsx` y `src/styles.css`: componentes y diseño adaptativo.
-- `tests/workflow.test.mjs`: pruebas del recorrido y de las restricciones que protegen los enlaces entre registros.
+- `tests/workflow.test.mjs`, `tests/identity.test.mjs` y `tests/vaccinations.test.mjs`: recorrido, marca, migración, fechas, duplicados y conservación de vínculos. 24 pruebas.
 
 La capa de dominio recibe un estado y devuelve el nuevo estado. El almacenamiento está separado para que la futura API no obligue a reescribir las reglas del recorrido.
 
 ## Límites actuales
 
 - Una clínica y un profesional por instalación local. No hay autenticación, roles, servidor ni aislamiento entre usuarios.
-- La clave histórica de almacenamiento se conserva para mantener las citas y los datos al actualizar. Datos bajo `clinic.workspace.v1` en el almacenamiento del navegador. No se comparten entre dispositivos ni dominios. Borrar los datos del navegador los elimina.
+- La clave histórica de almacenamiento se conserva para mantener las citas y los datos al actualizar. Datos bajo `clinic.workspace.v1` en el almacenamiento del navegador; el esquema interno v2 migra la versión anterior y añade vacunas sin insertar ejemplos en datos existentes. No se comparten entre dispositivos ni dominios. Borrar los datos del navegador los elimina.
 - Las modificaciones se sincronizan entre pestañas del mismo origen, pero no existe resolución de conflictos de edición simultánea.
 - El contacto es simulado. Copiar un mensaje no lo envía; registrar una respuesta tampoco conecta con WhatsApp o correo.
 - El horario de ejemplo es de 09:00 a 20:00. No se implementan festivos, múltiples profesionales, zonas horarias por sede ni turnos.
@@ -80,7 +93,9 @@ La capa de dominio recibe un estado y devuelve el nuevo estado. El almacenamient
 
 ## Siguiente fase
 
-Probar este recorrido con el veterinario y observar qué necesita en cada paso. Después: autenticación real, base de datos con permisos por clínica, historial de cambios, copias restaurables y envío de mensajes con estados de entrega. La marca CercaVet permanece separada de la identidad configurable de cada clínica.
+La [hoja de ruta y evidencia actual](docs/MEJORAS.md), revisada el 17 de octubre de 2026, recoge **P1 entregada en la demo: vacunaciones con vencimientos enlazados al seguimiento**. **P2: portal del propietario y equipo/catálogo de servicios** continúa pendiente, según el piloto. Se conserva la propuesta de cobros Bs/USD para validarla con la clínica venezolana; facturación fiscal, suscripciones SaaS y superadministración quedan aplazadas.
+
+Probar el recorrido con el veterinario y conocer su programa actual antes de ampliar el alcance. Para producción siguen pendientes autenticación, permisos por clínica/persona, historial de cambios, respaldo/restauración y mensajería trazable. La marca CercaVet permanece separada de la identidad configurable de cada clínica.
 
 ## Referencias de interacción
 
@@ -89,3 +104,5 @@ Patrones consultados: paneles complementarios y tablas de [shadcn/ui](https://ui
 ## Landing para clínicas
 
 `public/clinicas/` contiene la presentación comercial con beneficios, recorrido, vista previa de marca blanca, preguntas frecuentes y acceso a la demo. Se publica en `/cercavet/clinicas/`, conservando la aplicación en `/cercavet/`. La personalización de muestra no guarda ni envía datos. La captura procede de la demo con pacientes ficticios; las integraciones y la implantación real se distinguen de lo disponible hoy. No hay formularios, testimonios ni cifras de resultados.
+
+El [briefing de landing](docs/BRIEF_LANDING.md) distingue funciones locales, simuladas, planificadas y dependencias de activación. Los resúmenes actuales son TXT con nombre y contacto, sin PDF con logo ni identidad de emisión conservada. Las prioridades del backlog no se anuncian como disponibles hasta verificarlas.

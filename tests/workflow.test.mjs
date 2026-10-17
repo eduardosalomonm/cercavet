@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDemo } from "../src/seed.ts";
+import { createDemo as seedDemo } from "../src/seed.ts";
 import {
   addPatient,
   blankNotes,
@@ -17,6 +17,10 @@ import {
   saveDraft,
   startConsultation,
 } from "../src/domain.ts";
+
+// These original workflow cases use device-local dates. Vaccination tests cover Caracas boundaries.
+const createDemo = () =>
+  seedDemo(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 function completedVisit() {
   return finishConsultation(startConsultation(createDemo(), "a1"), "a1", {

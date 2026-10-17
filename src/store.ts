@@ -8,7 +8,10 @@ export function useClinic() {
   const [initial] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return { data: raw ? migrateDemoIdentity(parseState(raw)) : createDemo(), error: "" };
+      return {
+        data: raw ? migrateDemoIdentity(parseState(raw)) : createDemo(),
+        error: "",
+      };
     } catch (error) {
       return {
         data: createDemo(),
@@ -23,12 +26,26 @@ export function useClinic() {
   const current = useRef(data);
   const [loadError, setLoadError] = useState(initial.error);
   const [notice, setNotice] = useState("");
+  const [, refreshDay] = useState(0);
+  useEffect(() => {
+    const refresh = () => refreshDay((n) => n + 1);
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
   const commit = useCallback(
     (change: (data: ClinicState) => ClinicState, message = "") => {
       try {
         if (loadError)
           throw new Error("Recupera los datos guardados antes de continuar.");
-        const next = change(current.current);
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const latest = raw
+          ? migrateDemoIdentity(parseState(raw))
+          : current.current;
+        const next = change(latest);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         current.current = next;
         setData(next);
@@ -46,7 +63,10 @@ export function useClinic() {
   );
   const reset = () => {
     try {
-      const next = { ...createDemo(), brand: current.current.brand };
+      const next = {
+        ...createDemo(current.current.timeZone),
+        brand: current.current.brand,
+      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       current.current = next;
       setData(next);
@@ -66,7 +86,9 @@ export function useClinic() {
     const listener = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
       try {
-        const next = event.newValue ? migrateDemoIdentity(parseState(event.newValue)) : createDemo();
+        const next = event.newValue
+          ? migrateDemoIdentity(parseState(event.newValue))
+          : createDemo();
         current.current = next;
         setData(next);
         setLoadError("");

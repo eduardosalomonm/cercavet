@@ -115,7 +115,7 @@ export default function App() {
           onClick={() => {
             try {
               download(
-                "clinica-recuperacion.json",
+                "cercavet-recuperacion.json",
                 localStorage.getItem(STORAGE_KEY) || "{}",
               );
             } catch {
@@ -260,7 +260,7 @@ export default function App() {
             >
               <Menu />
             </button>
-            <span>Mi clínica</span>
+            <span>{data.brand.name}</span>
             <ChevronRight size={13} />
             <strong>{title}</strong>
           </div>

@@ -74,7 +74,7 @@ export function createDemo(): ClinicState {
   return {
     version: 1,
     brand: {
-      name: "Clínica Oliva",
+      name: "CercaVet",
       tagline: "Cuidamos de su vida contigo.",
       veterinarian: "Dra. Alba Martín",
       email: "hola@example.com",
@@ -173,7 +173,7 @@ export function createDemo(): ClinicState {
         dueDate: today,
         status: "pending",
         message:
-          "Hola, Clara. Somos Clínica Oliva. ¿Cómo se encuentra Bruno después de la consulta? Cuéntanos cómo evoluciona para preparar su revisión.",
+          "Hola, Clara. Somos CercaVet. ¿Cómo se encuentra Bruno después de la consulta? Cuéntanos cómo evoluciona para preparar su revisión.",
         response: "",
         outcome: "",
       },

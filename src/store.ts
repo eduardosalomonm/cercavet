@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { parseState, STORAGE_KEY } from "./domain.ts";
 import type { ClinicState } from "./domain.ts";
 import { createDemo } from "./seed.ts";
+import { migrateDemoIdentity } from "./identity.ts";
 
 export function useClinic() {
   const [initial] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return { data: raw ? parseState(raw) : createDemo(), error: "" };
+      return { data: raw ? migrateDemoIdentity(parseState(raw)) : createDemo(), error: "" };
     } catch (error) {
       return {
         data: createDemo(),
@@ -65,7 +66,7 @@ export function useClinic() {
     const listener = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
       try {
-        const next = event.newValue ? parseState(event.newValue) : createDemo();
+        const next = event.newValue ? migrateDemoIdentity(parseState(event.newValue)) : createDemo();
         current.current = next;
         setData(next);
         setLoadError("");

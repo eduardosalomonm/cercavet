@@ -1,14 +1,14 @@
-# Clínica Base
+# CercaVet
 
-Aplicación local de marca blanca para una clínica veterinaria. Implementación nueva e independiente, centrada en el recorrido **cita → consulta → seguimiento → nueva reserva**. La identidad inicial «Clínica Oliva» y todos los pacientes son ejemplos; no son una marca definitiva ni datos de una clínica real.
+Aplicación local de marca blanca para una clínica veterinaria. Implementación nueva e independiente, centrada en el recorrido **cita → consulta → seguimiento → nueva reserva**. La identidad inicial «CercaVet» y todos los pacientes son ejemplos; no representan una clínica real. CercaVet es el nombre del producto; cada clínica puede configurar su propia identidad.
 
-[Abrir demo pública](https://eduardosalomonm.github.io/clinica-base/) · [Código en GitHub](https://github.com/eduardosalomonm/clinica-base)
+[Abrir demo pública](https://eduardosalomonm.github.io/cercavet/) · [Código en GitHub](https://github.com/eduardosalomonm/cercavet)
 
 La demo utiliza datos ficticios y guarda los cambios únicamente en el navegador de cada visitante. No hay cuentas, servidor ni envío real de mensajes.
 
 ## Publicación
 
-Cada actualización de `main` ejecuta las pruebas, compila y publica `dist` en GitHub Pages mediante `.github/workflows/deploy.yml`. El despliegue define `DEPLOY_BASE_PATH=/clinica-base/`; en desarrollo local la ruta sigue siendo `/`. Si cambia el nombre del repositorio, actualizar esa ruta y los enlaces de este documento. Configuración basada en la [guía oficial de Vite para GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages).
+Cada actualización de `main` ejecuta las pruebas, compila y publica `dist` en GitHub Pages mediante `.github/workflows/deploy.yml`. El despliegue define `DEPLOY_BASE_PATH=/cercavet/`; en desarrollo local la ruta sigue siendo `/`. Si cambia el nombre del repositorio, actualizar esa ruta y los enlaces de este documento. Configuración basada en la [guía oficial de Vite para GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages).
 
 ## Arrancar
 
@@ -61,7 +61,7 @@ La capa de dominio recibe un estado y devuelve el nuevo estado. El almacenamient
 ## Límites actuales
 
 - Una clínica y un profesional por instalación local. No hay autenticación, roles, servidor ni aislamiento entre usuarios.
-- Datos bajo `clinic.workspace.v1` en el almacenamiento del navegador. No se comparten entre dispositivos ni dominios. Borrar los datos del navegador los elimina.
+- La clave histórica de almacenamiento se conserva para mantener las citas y los datos al actualizar. Datos bajo `clinic.workspace.v1` en el almacenamiento del navegador. No se comparten entre dispositivos ni dominios. Borrar los datos del navegador los elimina.
 - Las modificaciones se sincronizan entre pestañas del mismo origen, pero no existe resolución de conflictos de edición simultánea.
 - El contacto es simulado. Copiar un mensaje no lo envía; registrar una respuesta tampoco conecta con WhatsApp o correo.
 - El horario de ejemplo es de 09:00 a 20:00. No se implementan festivos, múltiples profesionales, zonas horarias por sede ni turnos.
@@ -74,7 +74,7 @@ La capa de dominio recibe un estado y devuelve el nuevo estado. El almacenamient
 
 ## Siguiente fase
 
-Probar este recorrido con el veterinario y observar qué necesita en cada paso. Después: autenticación real, base de datos con permisos por clínica, historial de cambios, copias restaurables y envío de mensajes con estados de entrega. El nombre comercial definitivo se puede elegir sin acoplarlo a la marca de cada clínica.
+Probar este recorrido con el veterinario y observar qué necesita en cada paso. Después: autenticación real, base de datos con permisos por clínica, historial de cambios, copias restaurables y envío de mensajes con estados de entrega. La marca CercaVet permanece separada de la identidad configurable de cada clínica.
 
 ## Referencias de interacción
 

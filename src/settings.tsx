@@ -211,7 +211,7 @@ export function Settings({
               variant="secondary"
               onClick={() =>
                 download(
-                  `clinica-copia-${localDate()}.json`,
+                  `cercavet-copia-${localDate()}.json`,
                   JSON.stringify(data, null, 2),
                 )
               }

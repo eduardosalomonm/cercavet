@@ -38,6 +38,11 @@ export function formatDate(value: string, long = false): string {
   }).format(new Date(`${value.slice(0, 10)}T12:00:00Z`));
 }
 
+// For a heading: "Lunes, 19 de octubre", never title case.
+export function capitalizeFirst(value: string): string {
+  return value.charAt(0).toLocaleUpperCase("es-ES") + value.slice(1);
+}
+
 export function clinicToday(
   state: { timeZone: string },
   now = new Date(),

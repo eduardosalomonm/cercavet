@@ -569,7 +569,6 @@ button:active:not(:disabled) {
   font-size: 10px;
   color: #788272;
   letter-spacing: 0.01em;
-  text-transform: capitalize;
 }
 .topbar-divider {
   height: 27px;
@@ -990,6 +989,27 @@ button:active:not(:disabled) {
   background: #e8f1eb;
   color: #457858;
 }
+.badge.waiting {
+  background: #e6eef3;
+  color: #4f6f86;
+}
+.badge.no-show {
+  background: #f4e7e3;
+  color: #a2584a;
+}
+.urgent-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #f6e1db;
+  color: #a2443a;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
 .badge.cancelled {
   background: #f1eae8;
   color: #94766e;
@@ -1014,8 +1034,18 @@ button:active:not(:disabled) {
   background: #fcfdf9;
   border-top: 1px solid var(--border);
 }
-.panel-foot > span:last-child {
-  margin-left: auto;
+.panel-foot {
+  flex-wrap: wrap;
+  column-gap: 18px;
+  row-gap: 8px;
+}
+.panel-foot .shift {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.panel-foot .shift > span:last-child {
+  color: #b0b8a6;
 }
 .presence-dot {
   width: 5px;
@@ -1189,7 +1219,6 @@ button:active:not(:disabled) {
 }
 .date-controls h2 {
   font-size: 17px;
-  text-transform: capitalize;
   min-width: 210px;
   text-align: center;
 }
@@ -1525,6 +1554,16 @@ textarea::placeholder {
 input:read-only {
   color: #9aa38f;
   background: #f5f7f0;
+}
+label.check-field {
+  flex-direction: row;
+  align-items: center;
+}
+.check-field input {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  accent-color: var(--primary);
 }
 input[type="radio"] {
   width: 14px;

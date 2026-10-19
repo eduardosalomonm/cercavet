@@ -1,6 +1,14 @@
 import { productBrand } from "./branding.ts";
-import { clinicToday, offsetDate } from "./domain.ts";
-import type { ClinicState, Patient } from "./domain.ts";
+import {
+  bookAppointment,
+  checkInAppointment,
+  clinicToday,
+  finishConsultation,
+  markNoShow,
+  offsetDate,
+  startConsultation,
+} from "./domain.ts";
+import type { Appointment, ClinicState, Patient } from "./domain.ts";
 import { registerVaccination } from "./vaccination-domain.ts";
 
 export function createDemo(timeZone = "America/Caracas"): ClinicState {
@@ -73,8 +81,42 @@ export function createDemo(timeZone = "America/Caracas"): ClinicState {
       email: "andres@example.com",
       allergies: "Sin alergias registradas",
     },
+    {
+      id: "p7",
+      name: "Toby",
+      species: "Perro",
+      breed: "Mestizo",
+      age: "3 años",
+      owner: "Sergio Navarro",
+      phone: "600 000 007",
+      email: "sergio@example.com",
+      allergies: "Alergia a la amoxicilina",
+    },
+    {
+      id: "p8",
+      name: "Kiwi",
+      species: "Otro",
+      breed: "Conejo enano",
+      age: "2 años",
+      owner: "Paula Ortega",
+      phone: "600 000 008",
+      email: "paula@example.com",
+      allergies: "Sin alergias registradas",
+    },
+    {
+      id: "p9",
+      name: "Misha",
+      species: "Gato",
+      breed: "Siamés",
+      age: "11 años",
+      owner: "Teresa Gómez",
+      phone: "600 000 009",
+      email: "teresa@example.com",
+      allergies: "Hipertiroidismo en control",
+    },
   ];
-  const state: ClinicState = {
+  const second = "Dr. Pablo Ruiz";
+  let state: ClinicState = {
     version: 2,
     timeZone,
     vaccinations: [],
@@ -87,40 +129,12 @@ export function createDemo(timeZone = "America/Caracas"): ClinicState {
       theme: "olive",
       logo: "",
     },
+    staff: [
+      { professional: "Dra. Alba Martín", from: "09:00", to: "17:00" },
+      { professional: second, from: "13:00", to: "20:00" },
+    ],
     patients,
     appointments: [
-      {
-        id: "a1",
-        patientId: "p1",
-        date: `${today}T09:30`,
-        duration: 30,
-        reason: "Revisión general",
-        status: "confirmed",
-      },
-      {
-        id: "a2",
-        patientId: "p2",
-        date: `${today}T10:15`,
-        duration: 45,
-        reason: "Revisión de alimentación",
-        status: "confirmed",
-      },
-      {
-        id: "a3",
-        patientId: "p5",
-        date: `${today}T11:30`,
-        duration: 30,
-        reason: "Primera visita",
-        status: "confirmed",
-      },
-      {
-        id: "a4",
-        patientId: "p6",
-        date: `${today}T12:15`,
-        duration: 30,
-        reason: "Control de evolución",
-        status: "confirmed",
-      },
       {
         id: "a5",
         patientId: "p3",
@@ -137,20 +151,12 @@ export function createDemo(timeZone = "America/Caracas"): ClinicState {
         reason: "Revisión general",
         status: "completed",
       },
-      {
-        id: "a7",
-        patientId: "p2",
-        date: `${day(1)}T09:30`,
-        duration: 30,
-        reason: "Control de peso",
-        status: "confirmed",
-      },
     ],
     consultations: [
       {
         id: "c1",
         appointmentId: "a5",
-        summary: "Control de movilidad. Caso de demostración.",
+        summary: "Control de movilidad. Rigidez leve al levantarse.",
         findings: "Se registra la evolución comunicada por su propietaria.",
         plan: "Seguir las indicaciones entregadas en consulta. Anotar los cambios para comentarlos en la próxima revisión.",
         weight: "8.4",
@@ -161,7 +167,7 @@ export function createDemo(timeZone = "America/Caracas"): ClinicState {
       {
         id: "c2",
         appointmentId: "a6",
-        summary: "Revisión general. Caso de demostración.",
+        summary: "Revisión general sin incidencias.",
         findings: "Se actualiza la ficha de la paciente.",
         plan: "Mantener el registro de hábitos acordado en consulta y compartirlo en el seguimiento.",
         weight: "4.2",
@@ -200,22 +206,107 @@ export function createDemo(timeZone = "America/Caracas"): ClinicState {
     ],
     drafts: {},
   };
-  return seedVaccinations(state, ["p3", "p2", "p1", "p4"]);
+  // Bookings go through the domain so shifts and overlaps follow the agenda rules.
+  const book = (
+    id: string,
+    input: Omit<Appointment, "id" | "status">,
+  ) => {
+    state = bookAppointment(state, input);
+    state.appointments[state.appointments.length - 1].id = id;
+  };
+  book("a4", {
+    patientId: "p6",
+    date: `${today}T09:00`,
+    duration: 30,
+    reason: "Control de evolución",
+  });
+  book("a1", {
+    patientId: "p1",
+    date: `${today}T09:30`,
+    duration: 30,
+    reason: "Revisión general",
+  });
+  book("a3", {
+    patientId: "p5",
+    date: `${today}T10:15`,
+    duration: 30,
+    reason: "Primera visita",
+  });
+  book("a8", {
+    patientId: "p7",
+    date: `${today}T10:45`,
+    duration: 30,
+    reason: "Vómitos desde anoche",
+    urgent: true,
+  });
+  book("a2", {
+    patientId: "p2",
+    date: `${today}T11:30`,
+    duration: 45,
+    reason: "Revisión de alimentación",
+  });
+  book("a9", {
+    patientId: "p8",
+    date: `${today}T13:30`,
+    duration: 30,
+    reason: "Revisión dental",
+    professional: second,
+  });
+  book("a10", {
+    patientId: "p9",
+    date: `${today}T17:00`,
+    duration: 30,
+    reason: "Control de tiroides",
+    professional: second,
+  });
+  book("a7", {
+    patientId: "p5",
+    date: `${day(1)}T10:00`,
+    duration: 30,
+    reason: "Primera visita (reprogramada)",
+  });
+  state = finishConsultation(startConsultation(state, "a4"), "a4", {
+    summary: "Buena evolución de la otitis. Oído sin secreción.",
+    findings: "Conducto limpio y sin dolor a la palpación.",
+    plan: "Terminar las gotas durante tres días más y evitar baños esta semana.",
+    weight: "19.6",
+    followupDate: day(2),
+    nextVisitDate: day(14),
+  });
+  state.consultations[state.consultations.length - 1] = {
+    ...state.consultations[state.consultations.length - 1],
+    id: "c3",
+    completedAt: `${today}T09:25:00`,
+  };
+  state.followups[state.followups.length - 1] = {
+    ...state.followups[state.followups.length - 1],
+    id: "f3",
+    consultationId: "c3",
+  } as ClinicState["followups"][number];
+  state = checkInAppointment(state, "a1");
+  state = checkInAppointment(state, "a8");
+  state = markNoShow(state, "a3");
+  return seedVaccinations(state, [
+    { patientId: "p4", name: "Trivalente felina" },
+    { patientId: "p1", name: "Rabia" },
+    { patientId: "p2", name: "Leucemia felina" },
+    { patientId: "p3", name: "Polivalente canina" },
+  ]);
 }
 
 function seedVaccinations(
   state: ClinicState,
-  patientIds: string[],
+  doses: { patientId: string; name: string }[],
 ): ClinicState {
   const today = clinicToday(state);
   const offsets = [-4, 0, 7, 45];
-  return patientIds.reduce(
-    (current, patientId, i) =>
+  return doses.reduce(
+    (current, { patientId, name }, i) =>
       registerVaccination(current, {
         id: `demo-vaccine-${i + 1}`,
         patientId,
-        name: i % 2 === 0 ? "Polivalente · ejemplo" : "Vacuna felina · ejemplo",
-        lot: `DEMO-2026-${i + 1}`,
+        name,
+        lot: ["FV4821A", "RB7730B", "LF3092C", "PC5518D"][i],
         administeredOn: offsetDate(-90 - i * 5, today),
         nextDueOn: offsetDate(offsets[i], today),
       }),
@@ -225,14 +316,19 @@ function seedVaccinations(
 
 export function addVaccinationExamples(state: ClinicState): ClinicState {
   if (state.vaccinations.length) return state;
-  const names = ["Bruno", "Nina", "Milo", "Lúa"];
-  const patients: Patient[] = names.map((name, i) => ({
+  const examples = [
+    ["Rocky", "Perro", "Laura Gil"],
+    ["Mía", "Gato", "Jorge Pardo"],
+    ["Thor", "Perro", "Nuria Campos"],
+    ["Kira", "Gato", "Óscar Lozano"],
+  ] as const;
+  const patients: Patient[] = examples.map(([name, species, owner], i) => ({
     id: `demo-vaccine-patient-${i + 1}`,
-    name: `${name} · ejemplo`,
-    species: i % 2 === 0 ? "Perro" : "Gato",
+    name,
+    species,
     breed: "",
     age: "",
-    owner: "Familia de ejemplo",
+    owner,
     phone: "",
     email: "",
     allergies: "",
@@ -248,6 +344,9 @@ export function addVaccinationExamples(state: ClinicState): ClinicState {
   }
   return seedVaccinations(
     { ...state, patients: [...state.patients, ...patients] },
-    patients.map((p) => p.id),
+    patients.map((p) => ({
+      patientId: p.id,
+      name: p.species === "Perro" ? "Polivalente canina" : "Trivalente felina",
+    })),
   );
 }

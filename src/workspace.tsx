@@ -15,15 +15,21 @@ import {
   Syringe,
 } from "lucide-react";
 import {
+  capitalizeFirst,
   clinicToday,
   formatDate,
   localDate,
   offsetDate,
+  professionalOf,
+  shifts,
   statusLabels,
 } from "./domain.ts";
 import { vaccinationStatus } from "./vaccination-domain.ts";
 import type { Appointment, ClinicState, Followup, Patient } from "./domain.ts";
 import { Badge, Button, Empty, Heading, PetIcon, TextLink } from "./ui.tsx";
+
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
 
 export const followupLabels = {
   pending: "Por contactar",
@@ -54,9 +60,9 @@ export function AppointmentList({
         return (
           <button
             key={a.id}
-            className={`appointment-row ${a.status === "cancelled" ? "cancelled" : ""}`}
+            className={`appointment-row ${a.status === "cancelled" || a.status === "no-show" ? "cancelled" : ""}`}
             onClick={() => onVisit(a.id)}
-            aria-label={`${a.date.slice(11)} ${p.name}, ${a.reason}, ${statusLabels[a.status]}`}
+            aria-label={`${a.date.slice(11)} ${p.name}, ${a.urgent ? "urgencia, " : ""}${a.reason}, ${professionalOf(data, a)}, ${statusLabels[a.status]}`}
           >
             <div className="appointment-time">
               <strong>{a.date.slice(11)}</strong>
@@ -71,8 +77,11 @@ export function AppointmentList({
               <p>{p.owner}</p>
             </div>
             <div className="appointment-reason">
-              <strong>{a.reason}</strong>
-              <p>{data.brand.veterinarian}</p>
+              <strong>
+                {a.urgent && <span className="urgent-tag">Urgencia</span>}
+                {a.reason}
+              </strong>
+              <p>{professionalOf(data, a)}</p>
             </div>
             <Badge tone={a.status}>{statusLabels[a.status]}</Badge>
             <ChevronRight className="row-arrow" size={18} />
@@ -162,6 +171,12 @@ export function Today({
   const followups = data.followups
     .filter((f) => f.status !== "closed")
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  // One card per patient keeps the overview varied; the full list stays in Seguimientos.
+  const highlighted = followups
+    .filter(
+      (f, i) => followups.findIndex((g) => g.patientId === f.patientId) === i,
+    )
+    .slice(0, 2);
   const toContact = followups.filter(
     (f) => f.dueDate <= clinicToday(data) && f.status === "pending",
   ).length;
@@ -270,9 +285,15 @@ export function Today({
             </Empty>
           )}
           <div className="panel-foot">
-            <span className="presence-dot" />
-            {data.brand.veterinarian}
-            <span>09:00 – 20:00</span>
+            {shifts(data).map((s) => (
+              <span className="shift" key={s.professional}>
+                <span className="presence-dot" />
+                {s.professional}
+                <span>
+                  {s.from} – {s.to}
+                </span>
+              </span>
+            ))}
           </div>
         </section>
         <section className="care-column">
@@ -283,7 +304,7 @@ export function Today({
             </div>
             <span className="count">{followups.length}</span>
           </div>
-          {followups.slice(0, 2).map((f) => (
+          {highlighted.map((f) => (
             <FollowupCard
               key={f.id}
               data={data}
@@ -365,7 +386,7 @@ export function Agenda({ data, onVisit, onBook }: WorkspaceProps) {
             >
               <ChevronLeft />
             </button>
-            <h2>{formatDate(date, true)}</h2>
+            <h2>{capitalizeFirst(formatDate(date, true))}</h2>
             <button
               className="icon-button"
               aria-label="Semana siguiente"
@@ -509,7 +530,9 @@ export function Patients({
           <option>Gato</option>
           <option>Otro</option>
         </select>
-        <span className="muted">{patients.length} pacientes</span>
+        <span className="muted">
+          {plural(patients.length, "paciente", "pacientes")}
+        </span>
       </div>
       <div className="patient-grid">
         {patients.map((p) => (
@@ -533,14 +556,15 @@ export function Patients({
             </div>
             <div className="patient-card-foot">
               <span>
-                {
+                {plural(
                   data.consultations.filter((c) =>
                     data.appointments.some(
                       (a) => a.id === c.appointmentId && a.patientId === p.id,
                     ),
-                  ).length
-                }{" "}
-                consultas
+                  ).length,
+                  "consulta",
+                  "consultas",
+                )}
               </span>
               <span>
                 Ver ficha <ArrowRight size={14} />

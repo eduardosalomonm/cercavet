@@ -35,6 +35,8 @@ npm run build
 5. Registrar una respuesta de ejemplo y su evolución.
 6. **Reservar revisión** crea una nueva cita enlazada al seguimiento y a la consulta anterior. Se bloquean solapamientos y duplicados. Si se cancela esa cita antes de empezar, el seguimiento vuelve a quedar pendiente de nueva reserva.
 
+El día de ejemplo tiene siete citas con dos profesionales (Dra. Alba Martín de 09:00 a 17:00 y Dr. Pablo Ruiz de 13:00 a 20:00): una atendida, dos en sala de espera (una urgencia), una ausencia y tres confirmadas, con perros, gatos y un conejo. Desde la cita se puede **Registrar llegada** o **Marcar como no acudió**; la ausencia libera el hueco y, como la cancelación, reabre el seguimiento si era su revisión.
+
 También se pueden añadir pacientes, buscar por nombre o propietario, consultar su historial, filtrar la agenda y descargar el resumen de una consulta en texto.
 
 ## Probar vacunaciones
@@ -73,17 +75,17 @@ La identidad corporativa vive en `src/branding.ts`. La clínica conserva sus pro
 - `src/forms.tsx`: alta de paciente, reserva y seguimiento.
 - `src/settings.tsx`: identidad y herramientas de demostración.
 - `src/ui.tsx` y `src/styles.css`: componentes y diseño adaptativo.
-- `tests/workflow.test.mjs`, `tests/identity.test.mjs` y `tests/vaccinations.test.mjs`: recorrido, marca, migración, fechas, duplicados y conservación de vínculos. 24 pruebas.
+- `tests/workflow.test.mjs`, `tests/identity.test.mjs` y `tests/vaccinations.test.mjs`: recorrido, marca, migración, fechas, duplicados, horarios por profesional, llegada/ausencia, variedad del día de ejemplo y conservación de vínculos. 26 pruebas.
 
 La capa de dominio recibe un estado y devuelve el nuevo estado. El almacenamiento está separado para que la futura API no obligue a reescribir las reglas del recorrido.
 
 ## Límites actuales
 
-- Una clínica y un profesional por instalación local. No hay autenticación, roles, servidor ni aislamiento entre usuarios.
+- Una clínica por instalación local. Los profesionales son nombres con horario en `staff` (opcional; sin él, una agenda de `brand.veterinarian` de 09:00 a 20:00): no son usuarios ni tienen permisos. No hay autenticación, roles, servidor ni aislamiento entre usuarios.
 - La clave histórica de almacenamiento se conserva para mantener las citas y los datos al actualizar. Datos bajo `clinic.workspace.v1` en el almacenamiento del navegador; el esquema interno v2 migra la versión anterior y añade vacunas sin insertar ejemplos en datos existentes. No se comparten entre dispositivos ni dominios. Borrar los datos del navegador los elimina.
 - Las modificaciones se sincronizan entre pestañas del mismo origen, pero no existe resolución de conflictos de edición simultánea.
 - El contacto es simulado. Copiar un mensaje no lo envía; registrar una respuesta tampoco conecta con WhatsApp o correo.
-- El horario de ejemplo es de 09:00 a 20:00. No se implementan festivos, múltiples profesionales, zonas horarias por sede ni turnos.
+- Los solapamientos se comprueban por profesional y su horario. No se implementan festivos, pausas, salas o recursos compartidos, ni zonas horarias por sede. El equipo no se edita todavía desde la interfaz.
 - La revisión propuesta es una fecha orientativa, no una reserva hasta completar el formulario.
 - No hay facturación, pagos, recetas, inventario, automatizaciones ni portal de propietarios en esta primera base.
 - Se puede exportar JSON; la importación de copias y la migración desde otros sistemas quedan pendientes.

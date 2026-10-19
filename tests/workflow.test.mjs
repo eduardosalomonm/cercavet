@@ -6,10 +6,12 @@ import {
   blankNotes,
   bookAppointment,
   cancelAppointment,
+  checkInAppointment,
   closeFollowup,
   contactFollowup,
   finishConsultation,
   localDate,
+  markNoShow,
   offsetDate,
   parseState,
   replyFollowup,
@@ -79,7 +81,7 @@ test("full visit cycle preserves patient and consultation links through a new bo
   assert.equal(review.previousFollowupId, followup.id);
   assert.equal(closed.newAppointmentId, review.id);
   assert.equal(closed.status, "closed");
-  assert.equal(original.appointments.length, 7);
+  assert.equal(original.appointments.length, 10);
   assert.deepEqual(parseState(JSON.stringify(state)), state);
 });
 test("overlapping appointments are rejected but adjacent appointments are permitted", () => {
@@ -251,5 +253,77 @@ test("unreadable or inconsistent local data is rejected instead of silently rese
   assert.throws(
     () => parseState(JSON.stringify({ ...createDemo(), brand: null })),
     /configuración/,
+  );
+});
+
+test("the demo day mixes statuses, professionals, species and an urgency", () => {
+  const state = createDemo();
+  const today = state.appointments.filter((a) => a.date.startsWith(localDate()));
+  assert.ok(today.length >= 6 && today.length <= 8);
+  assert.deepEqual(
+    [...new Set(today.map((a) => a.status))].sort(),
+    ["completed", "confirmed", "no-show", "waiting"],
+  );
+  assert.ok(today.some((a) => a.urgent));
+  assert.equal(
+    new Set(today.map((a) => a.professional || state.brand.veterinarian)).size,
+    2,
+  );
+  const species = today.map(
+    (a) => state.patients.find((p) => p.id === a.patientId).species,
+  );
+  for (const kind of ["Perro", "Gato", "Otro"]) assert.ok(species.includes(kind));
+  const names = [
+    ...state.patients.map((p) => p.name),
+    ...state.vaccinations.map((v) => v.name),
+  ];
+  assert.ok(names.every((name) => !/ejemplo/i.test(name)));
+  const first = state.followups
+    .filter((f) => f.status !== "closed")
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 2);
+  assert.notEqual(first[0].patientId, first[1].patientId);
+  assert.deepEqual(parseState(JSON.stringify(state)), state);
+});
+test("arrival, no-show and shifts follow the agenda rules", () => {
+  let state = createDemo();
+  const [alba, pablo] = state.staff.map((s) => s.professional);
+  const input = {
+    patientId: "p2",
+    date: `${localDate()}T13:30`,
+    duration: 30,
+    reason: "Consulta",
+  };
+  assert.throws(
+    () => bookAppointment(state, { ...input, professional: pablo }),
+    /ocupado/,
+  );
+  assert.doesNotThrow(() => bookAppointment(state, input));
+  assert.throws(
+    () =>
+      bookAppointment(state, {
+        ...input,
+        date: `${offsetDate(1)}T17:30`,
+        professional: alba,
+      }),
+    /horario de Dra/,
+  );
+  assert.throws(
+    () => bookAppointment(state, { ...input, professional: "Nadie" }),
+    /profesional/,
+  );
+  assert.throws(() => checkInAppointment(state, "a7"), /mismo día/);
+  assert.throws(() => markNoShow(state, "a7"), /ausencia/);
+  state = checkInAppointment(state, "a2");
+  assert.equal(state.appointments.find((a) => a.id === "a2").status, "waiting");
+  state = markNoShow(state, "a2");
+  assert.doesNotThrow(() =>
+    bookAppointment(state, { ...input, date: `${localDate()}T11:30` }),
+  );
+  assert.throws(() => startConsultation(state, "a2"), /disponible/);
+  state = saveBrand(state, { ...state.brand, veterinarian: "Dra. Alba M." });
+  assert.equal(state.staff[0].professional, "Dra. Alba M.");
+  assert.doesNotThrow(() =>
+    bookAppointment(state, { ...input, date: `${offsetDate(2)}T09:00` }),
   );
 });

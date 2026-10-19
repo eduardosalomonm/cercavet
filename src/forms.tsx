@@ -18,6 +18,7 @@ import {
   clinicToday,
   offsetDate,
   replyFollowup,
+  shifts,
 } from "./domain.ts";
 import type { ClinicState, Followup, Patient } from "./domain.ts";
 import type { Commit } from "./store.ts";
@@ -48,9 +49,16 @@ export function AppointmentForm({
     consultation?.nextVisitDate ||
     offsetDate(1, clinicToday(data));
   const [error, setError] = useState("");
+  const team = shifts(data);
+  const defaultProfessional = (
+    team.find((s) => s.from <= "16:00" && s.to > "16:00") || team[0]
+  ).professional;
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const professional = String(
+      form.get("professional") || data.brand.veterinarian,
+    );
     const error = commit(
       (s) =>
         bookAppointment(s, {
@@ -58,6 +66,8 @@ export function AppointmentForm({
           date: `${form.get("date")}T${form.get("time")}`,
           duration: Number(form.get("duration")),
           reason: String(form.get("reason")),
+          ...(professional !== data.brand.veterinarian ? { professional } : {}),
+          ...(form.get("urgent") ? { urgent: true } : {}),
           ...(followupId ? { previousFollowupId: followupId } : {}),
         }),
       followupId
@@ -146,7 +156,17 @@ export function AppointmentForm({
         </label>
         <label>
           Profesional
-          <input value={data.brand.veterinarian} readOnly />
+          {team.length > 1 ? (
+            <select name="professional" defaultValue={defaultProfessional}>
+              {team.map((s) => (
+                <option key={s.professional} value={s.professional}>
+                  {s.professional}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input value={data.brand.veterinarian} readOnly />
+          )}
         </label>
       </div>
       <label>
@@ -165,8 +185,16 @@ export function AppointmentForm({
           required
         />
       </label>
+      {!followupId && (
+        <label className="check-field">
+          <input name="urgent" type="checkbox" />
+          Marcar como urgencia
+        </label>
+      )}
       <p className="field-help">
-        Agenda de un profesional · Horario de 09:00 a 20:00.
+        {team.length > 1
+          ? `Horarios: ${team.map((s) => `${s.professional}, ${s.from}–${s.to}`).join(" · ")}.`
+          : `Agenda de un profesional · Horario de ${team[0].from} a ${team[0].to}.`}
       </p>
       <ErrorMessage message={error} />
       <div className="form-actions">

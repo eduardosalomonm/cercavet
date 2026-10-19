@@ -13,9 +13,12 @@ import {
 import {
   blankNotes,
   cancelAppointment,
+  checkInAppointment,
   finishConsultation,
   formatDate,
   clinicToday,
+  markNoShow,
+  professionalOf,
   saveDraft,
   startConsultation,
   statusLabels,
@@ -90,7 +93,7 @@ export function Visit({
     if (!consultation) return;
     download(
       `consulta-${patient.name.toLowerCase()}-${appointment.date.slice(0, 10)}.txt`,
-      `${data.brand.name}\n${data.brand.tagline}\n\nRESUMEN DE LA VISITA\nPaciente: ${patient.name}\nPropietario: ${patient.owner}\nFecha: ${formatDate(appointment.date, true)}\nProfesional: ${data.brand.veterinarian}\n\nVALORACIÓN\n${consultation.summary}\n\nINDICACIONES\n${consultation.plan}\n\nSeguimiento: ${formatDate(consultation.followupDate, true)}\n${consultation.nextVisitDate ? `Revisión propuesta: ${formatDate(consultation.nextVisitDate, true)}\n` : ""}\n${data.brand.email} · ${data.brand.phone}\n\nDocumento de demostración.`,
+      `${data.brand.name}\n${data.brand.tagline}\n\nRESUMEN DE LA VISITA\nPaciente: ${patient.name}\nPropietario: ${patient.owner}\nFecha: ${formatDate(appointment.date, true)}\nProfesional: ${professionalOf(data, appointment)}\n\nVALORACIÓN\n${consultation.summary}\n\nINDICACIONES\n${consultation.plan}\n\nSeguimiento: ${formatDate(consultation.followupDate, true)}\n${consultation.nextVisitDate ? `Revisión propuesta: ${formatDate(consultation.nextVisitDate, true)}\n` : ""}\n${data.brand.email} · ${data.brand.phone}\n\nDocumento de demostración.`,
       "text/plain;charset=utf-8",
     );
   }
@@ -110,7 +113,7 @@ export function Visit({
             <h1>La visita de {patient.name}</h1>
             <p>
               {patient.owner} · {formatDate(appointment.date, true)} ·{" "}
-              {appointment.date.slice(11)}
+              {appointment.date.slice(11)} · {professionalOf(data, appointment)}
             </p>
           </div>
         </div>
@@ -143,20 +146,45 @@ export function Visit({
                   ? "VISITA REGISTRADA"
                   : "ESPACIO CLÍNICO"}
               </span>
-              <h2>{appointment.reason}</h2>
+              <h2>
+                {appointment.urgent && (
+                  <span className="urgent-tag">Urgencia</span>
+                )}
+                {appointment.reason}
+              </h2>
             </div>
             <Stethoscope size={22} />
           </div>
-          {appointment.status === "confirmed" && (
+          {(appointment.status === "confirmed" ||
+            appointment.status === "waiting") && (
             <div className="visit-start">
               <span className="visit-start-icon">
                 <Stethoscope size={34} strokeWidth={1.4} />
               </span>
-              <h2>Todo listo para recibir a {patient.name}.</h2>
+              <h2>
+                {appointment.status === "waiting"
+                  ? `${patient.name} está en la sala de espera.`
+                  : `Todo listo para recibir a ${patient.name}.`}
+              </h2>
               <p>
                 Abre la consulta para anotar la valoración, las indicaciones y
                 el próximo contacto.
               </p>
+              {appointment.status === "confirmed" &&
+                appointment.date.slice(0, 10) === clinicToday(data) && (
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      run(
+                        (s) => checkInAppointment(s, appointmentId),
+                        "Llegada registrada.",
+                      )
+                    }
+                  >
+                    <Check size={18} />
+                    Registrar llegada
+                  </Button>
+                )}
               <Button
                 onClick={() =>
                   run(
@@ -168,6 +196,19 @@ export function Visit({
                 <Stethoscope size={18} />
                 Iniciar consulta
               </Button>
+              {appointment.date.slice(0, 10) <= clinicToday(data) && (
+                <button
+                  className="quiet-button"
+                  onClick={() =>
+                    run(
+                      (s) => markNoShow(s, appointmentId),
+                      "Ausencia registrada. El hueco queda libre.",
+                    )
+                  }
+                >
+                  Marcar como no acudió
+                </button>
+              )}
               {!cancelConfirm ? (
                 <button
                   className="quiet-button"
@@ -197,6 +238,16 @@ export function Visit({
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+          {appointment.status === "no-show" && (
+            <div className="visit-start">
+              <CalendarDays size={32} />
+              <h2>{patient.name} no acudió a esta cita.</h2>
+              <p>
+                Se conserva en el historial y el hueco queda libre. Puedes
+                proponer otra visita desde la agenda.
+              </p>
             </div>
           )}
           {appointment.status === "cancelled" && (

@@ -16,7 +16,13 @@ import {
   Syringe,
   X,
 } from "lucide-react";
-import { clinicToday, formatDate, STORAGE_KEY, themes } from "./domain.ts";
+import {
+  capitalizeFirst,
+  clinicToday,
+  formatDate,
+  STORAGE_KEY,
+  themes,
+} from "./domain.ts";
 import { clinicFavicon } from "./branding.ts";
 import { download, useClinic } from "./store.ts";
 import { AppointmentForm, FollowupForm, PatientForm } from "./forms.tsx";
@@ -280,7 +286,7 @@ export default function App() {
           </div>
           <div className="topbar-right">
             <span className="today-label">
-              {formatDate(clinicToday(data), true)}
+              {capitalizeFirst(formatDate(clinicToday(data), true))}
             </span>
             <span className="topbar-divider" />
             <span className="profile-avatar">

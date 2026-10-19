@@ -11,6 +11,7 @@ export {
   localDate,
   offsetDate,
   formatDate,
+  capitalizeFirst,
   validDay,
 } from "./dates.ts";
 
@@ -36,7 +37,12 @@ export interface Patient {
   allergies: string;
 }
 export type AppointmentStatus =
-  "confirmed" | "consulting" | "completed" | "cancelled";
+  | "confirmed"
+  | "waiting"
+  | "consulting"
+  | "completed"
+  | "no-show"
+  | "cancelled";
 export interface Appointment {
   id: string;
   patientId: string;
@@ -45,6 +51,14 @@ export interface Appointment {
   reason: string;
   status: AppointmentStatus;
   previousFollowupId?: string;
+  // Absent in older data: the appointment belongs to brand.veterinarian.
+  professional?: string;
+  urgent?: boolean;
+}
+export interface Shift {
+  professional: string;
+  from: string;
+  to: string;
 }
 export interface VisitNotes {
   summary: string;
@@ -105,6 +119,8 @@ export interface ClinicState {
   followups: Followup[];
   vaccinations: Vaccination[];
   drafts: Record<string, VisitNotes>;
+  // Optional in stored data; without it the clinic has one agenda from 09:00 to 20:00.
+  staff?: Shift[];
 }
 
 export const STORAGE_KEY = "clinic.workspace.v1";
@@ -130,10 +146,20 @@ export const themes = {
 };
 export const statusLabels: Record<AppointmentStatus, string> = {
   confirmed: "Confirmada",
+  waiting: "En sala de espera",
   consulting: "En consulta",
-  completed: "Finalizada",
+  completed: "Atendida",
+  "no-show": "No acudió",
   cancelled: "Cancelada",
 };
+const freeSlot: AppointmentStatus[] = ["cancelled", "no-show"];
+export const professionalOf = (state: ClinicState, a: Appointment) =>
+  a.professional || state.brand.veterinarian;
+export function shifts(state: ClinicState): Shift[] {
+  return state.staff?.length
+    ? state.staff
+    : [{ professional: state.brand.veterinarian, from: "09:00", to: "20:00" }];
+}
 const id = () => crypto.randomUUID();
 function requireValue(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -174,16 +200,24 @@ export function bookAppointment(
   );
   const start = new Date(input.date).getTime();
   const end = start + input.duration * 60_000;
-  const minutes =
-    Number(input.date.slice(11, 13)) * 60 + Number(input.date.slice(14));
+  const professional = input.professional?.trim() || state.brand.veterinarian;
+  const shift = shifts(state).find((s) => s.professional === professional);
+  requireValue(shift, "Selecciona un profesional de la clínica.");
+  const toMinutes = (time: string) =>
+    Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+  const minutes = toMinutes(input.date.slice(11));
   requireValue(
-    minutes >= 9 * 60 && minutes + input.duration <= 20 * 60,
-    "El horario de consulta es de 09:00 a 20:00.",
+    minutes >= toMinutes(shift.from) &&
+      minutes + input.duration <= toMinutes(shift.to),
+    state.staff?.length
+      ? `El horario de ${professional} es de ${shift.from} a ${shift.to}.`
+      : "El horario de consulta es de 09:00 a 20:00.",
   );
   requireValue(
     !state.appointments.some(
       (a) =>
-        a.status !== "cancelled" &&
+        !freeSlot.includes(a.status) &&
+        professionalOf(state, a) === professional &&
         start < new Date(a.date).getTime() + a.duration * 60_000 &&
         end > new Date(a.date).getTime(),
     ),
@@ -212,6 +246,8 @@ export function bookAppointment(
     id: id(),
     status: "confirmed",
   };
+  if (input.professional) appointment.professional = professional;
+  if (!input.urgent) delete appointment.urgent;
   return {
     ...state,
     appointments: [...state.appointments, appointment],
@@ -233,7 +269,7 @@ export function startConsultation(
 ): ClinicState {
   const appointment = state.appointments.find((a) => a.id === appointmentId);
   requireValue(
-    appointment?.status === "confirmed",
+    appointment?.status === "confirmed" || appointment?.status === "waiting",
     "Esta cita no está disponible para iniciar una consulta.",
   );
   return {
@@ -395,19 +431,15 @@ export function closeFollowup(
     ),
   };
 }
-export function cancelAppointment(
+function releaseAppointment(
   state: ClinicState,
   appointmentId: string,
+  status: "cancelled" | "no-show",
 ): ClinicState {
-  const appointment = state.appointments.find((a) => a.id === appointmentId);
-  requireValue(
-    appointment?.status === "confirmed",
-    "Solo se pueden cancelar citas que aún no han comenzado.",
-  );
   return {
     ...state,
     appointments: state.appointments.map((a) =>
-      a.id === appointmentId ? { ...a, status: "cancelled" } : a,
+      a.id === appointmentId ? { ...a, status } : a,
     ),
     followups: state.followups.map((f) =>
       f.newAppointmentId === appointmentId && f.closeReason !== "dose-recorded"
@@ -420,6 +452,53 @@ export function cancelAppointment(
         : f,
     ),
   };
+}
+export function cancelAppointment(
+  state: ClinicState,
+  appointmentId: string,
+): ClinicState {
+  const appointment = state.appointments.find((a) => a.id === appointmentId);
+  requireValue(
+    appointment?.status === "confirmed" || appointment?.status === "waiting",
+    "Solo se pueden cancelar citas que aún no han comenzado.",
+  );
+  return releaseAppointment(state, appointmentId, "cancelled");
+}
+export function checkInAppointment(
+  state: ClinicState,
+  appointmentId: string,
+): ClinicState {
+  const appointment = state.appointments.find((a) => a.id === appointmentId);
+  requireValue(
+    appointment?.status === "confirmed",
+    "Solo se puede registrar la llegada de una cita confirmada.",
+  );
+  requireValue(
+    appointment.date.slice(0, 10) === clinicToday(state),
+    "La llegada se registra el mismo día de la cita.",
+  );
+  return {
+    ...state,
+    appointments: state.appointments.map((a) =>
+      a.id === appointmentId ? { ...a, status: "waiting" } : a,
+    ),
+  };
+}
+// The slot is released and a linked followup can be booked again, as with a cancellation.
+export function markNoShow(
+  state: ClinicState,
+  appointmentId: string,
+): ClinicState {
+  const appointment = state.appointments.find((a) => a.id === appointmentId);
+  requireValue(
+    appointment?.status === "confirmed" || appointment?.status === "waiting",
+    "Solo se puede marcar la ausencia de una cita pendiente.",
+  );
+  requireValue(
+    appointment.date.slice(0, 10) <= clinicToday(state),
+    "La ausencia se registra el día de la cita o después.",
+  );
+  return releaseAppointment(state, appointmentId, "no-show");
 }
 export function addPatient(
   state: ClinicState,
@@ -461,9 +540,17 @@ export function saveBrand(state: ClinicState, brand: Brand): ClinicState {
   );
   requireValue(brand.logo.length < 450_000, "El logo es demasiado grande.");
   const name = brand.name.trim();
+  const veterinarian = brand.veterinarian.trim();
   return {
     ...state,
-    brand: { ...brand, name, veterinarian: brand.veterinarian.trim() },
+    brand: { ...brand, name, veterinarian },
+    ...(state.staff && {
+      staff: state.staff.map((s) =>
+        s.professional === state.brand.veterinarian
+          ? { ...s, professional: veterinarian }
+          : s,
+      ),
+    }),
     followups: state.followups.map((f) =>
       f.status === "pending" && state.brand.name
         ? { ...f, message: f.message.replaceAll(state.brand.name, name) }
@@ -535,7 +622,9 @@ export function parseState(raw: string): ClinicState {
           strings(a, ["id", "patientId", "date", "reason", "status"]) &&
           typeof a.duration === "number" &&
           Number.isFinite(Date.parse(a.date)) &&
-          Object.hasOwn(statusLabels, a.status),
+          Object.hasOwn(statusLabels, a.status) &&
+          (a.professional === undefined || typeof a.professional === "string") &&
+          (a.urgent === undefined || typeof a.urgent === "boolean"),
       ),
     "No se pueden leer las citas guardadas.",
   );
@@ -580,6 +669,18 @@ export function parseState(raw: string): ClinicState {
           ["pending", "contacted", "replied", "closed"].includes(f.status),
       ),
     "No se pueden leer los seguimientos guardados.",
+  );
+  requireValue(
+    x.staff === undefined ||
+      (Array.isArray(x.staff) &&
+        x.staff.every(
+          (s) =>
+            strings(s, ["professional", "from", "to"]) &&
+            /^\d{2}:\d{2}$/.test(s.from) &&
+            /^\d{2}:\d{2}$/.test(s.to) &&
+            s.from < s.to,
+        )),
+    "No se pueden leer los horarios guardados.",
   );
   requireValue(
     obj(x.drafts) && Object.values(x.drafts).every((d) => strings(d, noteKeys)),

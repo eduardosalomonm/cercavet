@@ -282,11 +282,11 @@ export function Vaccinations({
                       <li key={`${c.at}-${i}`}>
                         <strong>{c.reason}</strong>
                         <span>
-                          Antes: aplicación {c.administeredOn} · próxima dosis{" "}
-                          {c.nextDueOn}
+                          Antes: aplicación {formatDate(c.administeredOn)} ·
+                          próxima dosis {formatDate(c.nextDueOn)}
                         </span>
                         <small>
-                          {new Intl.DateTimeFormat("es", {
+                          {new Intl.DateTimeFormat("es-ES", {
                             timeZone: data.timeZone,
                             dateStyle: "medium",
                             timeStyle: "short",

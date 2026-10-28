@@ -444,7 +444,11 @@ function VaccinationForm({
     if (!error) onDone();
   }
   return (
-    <form className="form-stack" onSubmit={submit}>
+    <form
+      className="form-stack"
+      onSubmit={submit}
+      onChangeCapture={() => setError("")}
+    >
       <label>
         Paciente
         <select

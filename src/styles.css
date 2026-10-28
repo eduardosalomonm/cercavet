@@ -352,6 +352,7 @@ button:active:not(:disabled) {
   border-right: 1px solid #dfe4d9;
   padding: 34px 20px 16px;
   z-index: 30;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
@@ -527,6 +528,10 @@ button:active:not(:disabled) {
   background: #8ca47c;
 }
 .demo-indicator button {
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: none;
   margin-left: auto;
@@ -1193,6 +1198,7 @@ button:active:not(:disabled) {
 }
 .workspace-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 20px;
   align-items: center;
@@ -3419,3 +3425,11 @@ textarea::placeholder {
   font-weight: 650;
   text-underline-offset: 4px;
 }
+
+.booked-review { background: var(--primary-soft); border-radius: 12px; padding: 20px; margin: 18px 0; }
+.booked-review > strong { display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.booked-review p { margin: 10px 0 16px; color: var(--muted); }
+.workspace-footer a { color: var(--primary); font-size: 12px; text-underline-offset: 3px; padding: 8px 0; }
+
+.leave-confirm { margin-bottom: 20px; border: 1px solid var(--primary); }
+.leave-confirm .form-actions { flex-wrap: wrap; }

@@ -78,7 +78,11 @@ export function AppointmentForm({
     if (!error) onDone();
   }
   return (
-    <form onSubmit={submit} className="form-stack">
+    <form
+      onSubmit={submit}
+      className="form-stack"
+      onChangeCapture={() => setError("")}
+    >
       {followup && (
         <div className="info-box">
           <CalendarPlus size={19} />
@@ -240,7 +244,11 @@ export function PatientForm({
     if (!error) onDone();
   }
   return (
-    <form onSubmit={submit} className="form-stack">
+    <form
+      onSubmit={submit}
+      className="form-stack"
+      onChangeCapture={() => setError("")}
+    >
       <div className="form-grid">
         <label>
           Nombre del paciente
@@ -337,7 +345,7 @@ export function FollowupForm({
   const run = (fn: (s: ClinicState) => ClinicState, notice: string) =>
     setError(commit(fn, notice));
   return (
-    <div className="form-stack">
+    <div className="form-stack" onChangeCapture={() => setError("")}>
       <div className="patient-summary">
         <PetIcon patient={patient} large />
         <div>

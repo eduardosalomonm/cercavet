@@ -33,12 +33,14 @@ export function Visit({
   commit,
   onBack,
   onFollowup,
+  onVisit,
 }: {
   data: ClinicState;
   appointmentId: string;
   commit: Commit;
   onBack: () => void;
   onFollowup: (id: string) => void;
+  onVisit: (id: string) => void;
 }) {
   const appointment = data.appointments.find((a) => a.id === appointmentId)!;
   const patient = data.patients.find((p) => p.id === appointment.patientId)!;
@@ -73,8 +75,13 @@ export function Visit({
     if (!error) setDirty(false);
     return error;
   };
-  const step = followup?.newAppointmentId
-    ? 4
+  const bookedReview = data.appointments.find(
+    (a) =>
+      a.id === followup?.newAppointmentId &&
+      !["cancelled", "no-show"].includes(a.status),
+  );
+  const step = bookedReview
+    ? 5
     : consultation
       ? 3
       : appointment.status === "consulting"
@@ -406,14 +413,40 @@ export function Visit({
                   <strong>{formatDate(consultation.followupDate)}</strong>
                 </div>
                 <div>
-                  <span>Revisión propuesta</span>
+                  <span>
+                    {bookedReview ? "Revisión reservada" : "Revisión propuesta"}
+                  </span>
                   <strong>
-                    {consultation.nextVisitDate
-                      ? formatDate(consultation.nextVisitDate)
-                      : "Sin fecha"}
+                    {bookedReview
+                      ? `${formatDate(bookedReview.date)} · ${bookedReview.date.slice(11)}`
+                      : consultation.nextVisitDate
+                        ? formatDate(consultation.nextVisitDate)
+                        : "Sin fecha"}
                   </strong>
                 </div>
               </div>
+              {bookedReview && (
+                <section
+                  className="booked-review"
+                  aria-label="Revisión reservada"
+                >
+                  <strong>
+                    <Check size={18} />
+                    Recorrido completado · revisión reservada
+                  </strong>
+                  <p>
+                    {formatDate(bookedReview.date, true)} ·{" "}
+                    {bookedReview.date.slice(11)} ·{" "}
+                    {professionalOf(data, bookedReview)}
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onClick={() => onVisit(bookedReview.id)}
+                  >
+                    Ver nueva reserva <ArrowRight size={16} />
+                  </Button>
+                </section>
+              )}
               <div className="form-actions">
                 <Button variant="secondary" onClick={exportVisit}>
                   <Download size={16} />
@@ -432,7 +465,7 @@ export function Visit({
         </section>
         <aside className="visit-aside">
           <section className="panel compact-panel">
-            <div className="eyebrow">ANTES DE EMPEZAR</div>
+            <div className="eyebrow">DATOS DEL PACIENTE</div>
             <h3>Conocemos a {patient.name}</h3>
             <dl>
               <div>
@@ -471,10 +504,19 @@ export function Visit({
           )}
           <div className="care-tip">
             <MessageCircle size={23} strokeWidth={1.5} />
-            <h3>Un contacto a tiempo.</h3>
+            <h3>
+              {bookedReview
+                ? "La próxima visita está lista."
+                : consultation
+                  ? "El seguimiento está listo."
+                  : "Un contacto a tiempo."}
+            </h3>
             <p>
-              Al finalizar, tendrás un mensaje preparado con tus indicaciones
-              para continuar el cuidado.
+              {bookedReview
+                ? "La revisión está en la agenda y enlazada a este seguimiento. Puedes abrirla desde el resumen."
+                : consultation
+                  ? "Abre el seguimiento para registrar un contacto de prueba, anotar la respuesta y organizar la revisión."
+                  : "Al finalizar, tendrás un mensaje preparado con tus indicaciones para continuar el cuidado."}
             </p>
           </div>
         </aside>

@@ -2,13 +2,13 @@
 
 Aplicación local de marca blanca para una clínica veterinaria. Implementación nueva e independiente, centrada en el recorrido **cita → consulta → seguimiento → nueva reserva**. La identidad inicial «CercaVet» y todos los pacientes son ejemplos; no representan una clínica real. CercaVet es el nombre del producto; cada clínica puede configurar su propia identidad.
 
-[Landing para clínicas](https://eduardosalomonm.github.io/cercavet/clinicas/) · [Abrir demo pública](https://eduardosalomonm.github.io/cercavet/) · [Código en GitHub](https://github.com/eduardosalomonm/cercavet)
+[Landing para clínicas](https://veterinaria.eilvi.com/clinicas/) · [Abrir demo pública](https://veterinaria.eilvi.com/) · [Código en GitHub](https://github.com/eduardosalomonm/cercavet)
 
 La demo utiliza datos ficticios y guarda los cambios únicamente en el navegador de cada visitante. No hay cuentas, servidor ni envío real de mensajes.
 
 ## Publicación
 
-Cada actualización de `main` ejecuta las pruebas, compila y publica `dist` en GitHub Pages mediante `.github/workflows/deploy.yml`. El despliegue define `DEPLOY_BASE_PATH=/cercavet/`; en desarrollo local la ruta sigue siendo `/`. Si cambia el nombre del repositorio, actualizar esa ruta y los enlaces de este documento. Configuración basada en la [guía oficial de Vite para GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages).
+Cada actualización de `main` ejecuta las pruebas, compila y publica `dist` en GitHub Pages mediante `.github/workflows/deploy.yml`. El despliegue define `DEPLOY_BASE_PATH=/`; en desarrollo local la ruta sigue siendo `/`. El dominio se configura en `public/CNAME`; los enlaces y la base deben mantenerse coherentes con ese despliegue. Configuración basada en la [guía oficial de Vite para GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages).
 
 ## Arrancar
 
@@ -58,7 +58,7 @@ La configuración inicial está en `src/seed.ts`; las paletas y el contrato de c
 
 ## Identidad CercaVet
 
-[Guía visual y descargas](https://eduardosalomonm.github.io/cercavet/brand/) · [Guía de uso](docs/BRAND.md). El kit contiene siete SVG con letras convertidas a contornos, más la guía y la licencia tipográfica. `scripts/generate-brand.py` permite regenerarlos.
+[Guía visual y descargas](https://veterinaria.eilvi.com/brand/) · [Guía de uso](docs/BRAND.md). El kit contiene siete SVG con letras convertidas a contornos, más la guía y la licencia tipográfica. `scripts/generate-brand.py` permite regenerarlos.
 
 La identidad corporativa vive en `src/branding.ts`. La clínica conserva sus propios datos en `brand`: su logo sustituye al símbolo, y sin imagen se muestran sus iniciales cuando usa otro nombre. El favicon sigue la misma regla. Los datos y las identidades ya personalizadas se conservan.
 
@@ -105,6 +105,10 @@ Patrones consultados: paneles complementarios y tablas de [shadcn/ui](https://ui
 
 ## Landing para clínicas
 
-`public/clinicas/` contiene la presentación comercial con beneficios, recorrido, vista previa de marca blanca, preguntas frecuentes y acceso a la demo. Se publica en `/cercavet/clinicas/`, conservando la aplicación en `/cercavet/`. La personalización de muestra no guarda ni envía datos. La captura procede de la demo con pacientes ficticios; las integraciones y la implantación real se distinguen de lo disponible hoy. No hay formularios, testimonios ni cifras de resultados.
+`public/clinicas/` contiene la presentación comercial con beneficios, recorrido, vista previa de marca blanca, preguntas frecuentes y acceso a la demo. Se publica en `/clinicas/`, conservando la aplicación en `/` del dominio `veterinaria.eilvi.com`. La personalización de muestra no guarda ni envía datos. La captura procede de la demo con pacientes ficticios; las integraciones y la implantación real se distinguen de lo disponible hoy. No hay formularios, testimonios ni cifras de resultados.
 
 El [briefing de landing](docs/BRIEF_LANDING.md) distingue funciones locales, simuladas, planificadas y dependencias de activación. Los resúmenes actuales son TXT con nombre y contacto, sin PDF con logo ni identidad de emisión conservada. Las prioridades del backlog no se anuncian como disponibles hasta verificarlas.
+
+## QA de lanzamiento
+
+[Informe de cinco perfiles y capturas](docs/qa-launch/RESULTADOS.md), 28 de octubre de 2026. Incluye recorridos reales de navegador, móvil a 375 px con red limitada, hallazgos por frecuencia y repetición tras las correcciones. La demo incorpora información de privacidad y uso, estado de carga, protección de formularios al volver atrás y confirmación persistente de las revisiones reservadas.

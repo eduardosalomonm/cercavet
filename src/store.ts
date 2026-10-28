@@ -4,6 +4,8 @@ import type { ClinicState } from "./domain.ts";
 import { createDemo } from "./seed.ts";
 import { migrateDemoIdentity } from "./identity.ts";
 
+export const CLINIC_SAVED_EVENT = "cercavet:stored";
+
 export function useClinic() {
   const [initial] = useState(() => {
     try {
@@ -49,6 +51,9 @@ export function useClinic() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         current.current = next;
         setData(next);
+        // A successful local save also clears unsaved-form protection when
+        // a followup stays open after recording a contact or a response.
+        window.dispatchEvent(new Event(CLINIC_SAVED_EVENT));
         if (message) setNotice(message);
         return "";
       } catch (error) {

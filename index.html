@@ -12,7 +12,59 @@
     <title>CercaVet · Espacio de trabajo</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="startup" aria-labelledby="startup-title">
+        <p>CERCAVET · DEMOSTRACIÓN</p>
+        <h1 id="startup-title">Estamos preparando tu clínica.</h1>
+        <p role="status">
+          Cargando la demo con pacientes de ejemplo. Con una conexión lenta
+          puede tardar unos segundos.
+        </p>
+        <p>
+          Sin registro ni envíos reales. Todavía no necesitas introducir datos.
+        </p>
+        <a href="" id="startup-retry" hidden>Volver a intentar la carga</a>
+        <a href="%BASE_URL%clinicas/">Volver a la presentación</a>
+        <noscript
+          ><p>
+            Activa JavaScript para usar la demo. La presentación y la
+            información de privacidad se pueden leer sin JavaScript.
+          </p></noscript
+        >
+      </main>
+    </div>
+    <style>
+      .startup {
+        box-sizing: border-box;
+        max-width: 620px;
+        margin: 12vh auto;
+        padding: 28px;
+        font:
+          16px/1.65 system-ui,
+          sans-serif;
+        color: #234b42;
+        background: #f7f7f0;
+        border-radius: 20px;
+      }
+      .startup h1 {
+        font-size: 28px;
+        line-height: 1.2;
+      }
+      .startup a {
+        color: inherit;
+        margin: 16px 20px 0 0;
+        display: inline-block;
+      }
+      .startup [hidden] {
+        display: none;
+      }
+    </style>
+    <script>
+      window.setTimeout(function () {
+        var retry = document.getElementById("startup-retry");
+        if (retry) retry.hidden = false;
+      }, 15000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

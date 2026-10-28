@@ -342,12 +342,16 @@ export default function App() {
                 commit={commit}
                 onBack={() => navigate("agenda")}
                 onFollowup={onFollowup}
+                onVisit={onVisit}
               />
             )}
         </main>
         <footer className="workspace-footer">
           <span>{data.brand.tagline}</span>
           <span>Datos de ejemplo · Guardado en este navegador</span>
+          <a href={`${import.meta.env.BASE_URL}clinicas/privacidad.html`}>
+            Privacidad y uso de la demo
+          </a>
         </footer>
       </div>
       <div className="toast-region" role="status" aria-live="polite">

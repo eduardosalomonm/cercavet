@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseState, STORAGE_KEY } from "./domain.ts";
 import type { ClinicState } from "./domain.ts";
-import { createDemo } from "./seed.ts";
+import { createDemo, restoreDemo } from "./seed.ts";
 import { migrateDemoIdentity } from "./identity.ts";
 
 export const CLINIC_SAVED_EVENT = "cercavet:stored";
@@ -68,10 +68,7 @@ export function useClinic() {
   );
   const reset = () => {
     try {
-      const next = {
-        ...createDemo(current.current.timeZone),
-        brand: current.current.brand,
-      };
+      const next = restoreDemo(current.current);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       current.current = next;
       setData(next);

@@ -6,6 +6,7 @@ import {
   finishConsultation,
   markNoShow,
   offsetDate,
+  saveBrand,
   startConsultation,
 } from "./domain.ts";
 import type { Appointment, ClinicState, Patient } from "./domain.ts";
@@ -349,4 +350,10 @@ export function addVaccinationExamples(state: ClinicState): ClinicState {
       name: p.species === "Perro" ? "Polivalente canina" : "Trivalente felina",
     })),
   );
+}
+
+// Fresh examples keep the clinic identity; saveBrand also renames the
+// example vet in the staff schedule so shifts and overlaps stay consistent.
+export function restoreDemo(state: ClinicState): ClinicState {
+  return saveBrand(createDemo(state.timeZone), state.brand);
 }

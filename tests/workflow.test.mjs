@@ -23,6 +23,8 @@ import {
 // These original workflow cases use device-local dates. Vaccination tests cover Caracas boundaries.
 const createDemo = () =>
   seedDemo(Intl.DateTimeFormat().resolvedOptions().timeZone);
+// Earlier slots of today stay bookable when a test runs late in the day.
+const dayStart = new Date(`${localDate()}T00:00`);
 
 function completedVisit() {
   return finishConsultation(startConsultation(createDemo(), "a1"), "a1", {
@@ -92,13 +94,13 @@ test("overlapping appointments are rejected but adjacent appointments are permit
     duration: 30,
     reason: "Consulta",
   };
-  assert.throws(() => bookAppointment(state, input), /ocupado/);
+  assert.throws(() => bookAppointment(state, input, dayStart), /ocupado/);
   assert.doesNotThrow(() =>
-    bookAppointment(state, {
-      ...input,
-      date: `${localDate()}T10:00`,
-      duration: 15,
-    }),
+    bookAppointment(
+      state,
+      { ...input, date: `${localDate()}T10:00`, duration: 15 },
+      dayStart,
+    ),
   );
   assert.throws(
     () =>
@@ -295,10 +297,10 @@ test("arrival, no-show and shifts follow the agenda rules", () => {
     reason: "Consulta",
   };
   assert.throws(
-    () => bookAppointment(state, { ...input, professional: pablo }),
+    () => bookAppointment(state, { ...input, professional: pablo }, dayStart),
     /ocupado/,
   );
-  assert.doesNotThrow(() => bookAppointment(state, input));
+  assert.doesNotThrow(() => bookAppointment(state, input, dayStart));
   assert.throws(
     () =>
       bookAppointment(state, {
@@ -309,7 +311,7 @@ test("arrival, no-show and shifts follow the agenda rules", () => {
     /horario de Dra/,
   );
   assert.throws(
-    () => bookAppointment(state, { ...input, professional: "Nadie" }),
+    () => bookAppointment(state, { ...input, professional: "Nadie" }, dayStart),
     /profesional/,
   );
   assert.throws(() => checkInAppointment(state, "a7"), /mismo día/);
@@ -318,7 +320,11 @@ test("arrival, no-show and shifts follow the agenda rules", () => {
   assert.equal(state.appointments.find((a) => a.id === "a2").status, "waiting");
   state = markNoShow(state, "a2");
   assert.doesNotThrow(() =>
-    bookAppointment(state, { ...input, date: `${localDate()}T11:30` }),
+    bookAppointment(
+      state,
+      { ...input, date: `${localDate()}T11:30` },
+      dayStart,
+    ),
   );
   assert.throws(() => startConsultation(state, "a2"), /disponible/);
   state = saveBrand(state, { ...state.brand, veterinarian: "Dra. Alba M." });

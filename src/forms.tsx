@@ -12,6 +12,7 @@ import {
 import {
   addPatient,
   bookAppointment,
+  clinicNow,
   closeFollowup,
   contactFollowup,
   formatDate,
@@ -49,6 +50,20 @@ export function AppointmentForm({
     consultation?.nextVisitDate ||
     offsetDate(1, clinicToday(data));
   const [error, setError] = useState("");
+  // Today only offers the next quarter hour onwards; late in the day the
+  // form starts on tomorrow.
+  const today = clinicToday(data);
+  const [h, m] = clinicNow(data).slice(11).split(":").map(Number);
+  const next = Math.ceil((h * 60 + m + 1) / 15) * 15;
+  const nextSlot = `${String(Math.floor(next / 60)).padStart(2, "0")}:${String(next % 60).padStart(2, "0")}`;
+  const [day, setDay] = useState(
+    followupId && proposed > today
+      ? proposed
+      : nextSlot > "19:45"
+        ? offsetDate(1, today)
+        : today,
+  );
+  const minTime = day === today && nextSlot > "09:00" ? nextSlot : "09:00";
   const team = shifts(data);
   const defaultProfessional = (
     team.find((s) => s.from <= "16:00" && s.to > "16:00") || team[0]
@@ -123,14 +138,9 @@ export function AppointmentForm({
           <input
             name="date"
             type="date"
-            min={clinicToday(data)}
-            defaultValue={
-              followupId
-                ? proposed < clinicToday(data)
-                  ? clinicToday(data)
-                  : proposed
-                : clinicToday(data)
-            }
+            min={today}
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
             required
           />
         </label>
@@ -139,10 +149,10 @@ export function AppointmentForm({
           <input
             name="time"
             type="time"
-            min="09:00"
+            min={minTime}
             max="19:45"
             step="900"
-            defaultValue="16:00"
+            defaultValue={minTime > "16:00" ? minTime : "16:00"}
             required
           />
         </label>

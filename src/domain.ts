@@ -1,4 +1,5 @@
 import {
+  clinicNow,
   clinicToday,
   localDate,
   offsetDate,
@@ -7,6 +8,7 @@ import {
 } from "./dates.ts";
 import { validateVaccinationState } from "./vaccination-domain.ts";
 export {
+  clinicNow,
   clinicToday,
   localDate,
   offsetDate,
@@ -187,6 +189,7 @@ export function blankNotes(today = localDate()): VisitNotes {
 export function bookAppointment(
   state: ClinicState,
   input: Omit<Appointment, "id" | "status">,
+  now = new Date(),
 ): ClinicState {
   requireValue(
     state.patients.some((p) => p.id === input.patientId),
@@ -199,8 +202,12 @@ export function bookAppointment(
     "Indica una fecha y una hora válidas.",
   );
   requireValue(
-    input.date.slice(0, 10) >= clinicToday(state),
+    input.date.slice(0, 10) >= clinicToday(state, now),
     "La reserva debe ser para hoy o para una fecha posterior.",
+  );
+  requireValue(
+    input.date >= clinicNow(state, now),
+    "Esa hora de hoy ya ha pasado. Elige una hora posterior.",
   );
   requireValue(input.reason.trim(), "Indica el motivo de la cita.");
   requireValue(

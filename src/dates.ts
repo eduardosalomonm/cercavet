@@ -50,6 +50,20 @@ export function clinicToday(
   return localDate(now, state.timeZone);
 }
 
+// Wall time in the clinic, "YYYY-MM-DDTHH:MM", comparable with appointments.
+export function clinicNow(
+  state: { timeZone: string },
+  now = new Date(),
+): string {
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone: state.timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(now);
+  return `${clinicToday(state, now)}T${time}`;
+}
+
 export function validTimeZone(value: unknown): value is string {
   if (typeof value !== "string" || !value) return false;
   try {

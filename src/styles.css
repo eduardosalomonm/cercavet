@@ -2645,9 +2645,11 @@ textarea {
     z-index: 70;
     width: 255px;
     padding-top: 30px;
+    visibility: hidden;
   }
   .sidebar.open {
     transform: translateX(0);
+    visibility: visible;
   }
   .sidebar-shade {
     display: block;
@@ -3388,14 +3390,6 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: #7c8872;
-}
-@media (max-width: 760px) {
-  .sidebar {
-    visibility: hidden;
-  }
-  .sidebar.open {
-    visibility: visible;
-  }
 }
 
 /* Product symbol and clinic logos share a slot, never a combined mark. */

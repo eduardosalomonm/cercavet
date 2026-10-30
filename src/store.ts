@@ -14,6 +14,12 @@ export function readStored(raw: string): ClinicState {
     stored = { raw, state: migrateDemoIdentity(parseState(raw)) };
   return stored.state;
 }
+export function sameExceptDrafts(a: ClinicState, b: ClinicState) {
+  return (
+    JSON.stringify({ ...a, drafts: null }) ===
+    JSON.stringify({ ...b, drafts: null })
+  );
+}
 function writeStored(state: ClinicState) {
   const raw = JSON.stringify(state);
   localStorage.setItem(STORAGE_KEY, raw);
@@ -100,10 +106,13 @@ export function useClinic() {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
       try {
         const next = event.newValue ? readStored(event.newValue) : createDemo();
+        // A draft typed in another tab saves on every keystroke: stay quiet.
+        const draftOnly = sameExceptDrafts(current.current, next);
         current.current = next;
         setData(next);
         setLoadError("");
-        setNotice("Se han actualizado los datos desde otra pestaña.");
+        if (!draftOnly)
+          setNotice("Se han actualizado los datos desde otra pestaña.");
       } catch {
         setLoadError(
           "Los datos modificados en otra pestaña no se pueden leer.",

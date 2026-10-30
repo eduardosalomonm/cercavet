@@ -24,7 +24,6 @@ export function visitorTimeZone() {
   return "Europe/Madrid";
 }
 
-
 export function createDemo(timeZone = visitorTimeZone()): ClinicState {
   const today = clinicToday({ timeZone });
   const day = (n: number) => offsetDate(n, today);
@@ -221,11 +220,10 @@ export function createDemo(timeZone = visitorTimeZone()): ClinicState {
     drafts: {},
   };
   // Bookings go through the domain so shifts and overlaps follow the agenda rules.
-  const book = (
-    id: string,
-    input: Omit<Appointment, "id" | "status">,
-  ) => {
-    state = bookAppointment(state, input);
+  // No later than the clinic's midnight in any zone: this morning's examples are allowed.
+  const dayStart = new Date(Date.parse(`${today}T00:00:00Z`) - 14 * 3_600_000);
+  const book = (id: string, input: Omit<Appointment, "id" | "status">) => {
+    state = bookAppointment(state, input, dayStart);
     state.appointments[state.appointments.length - 1].id = id;
   };
   book("a4", {

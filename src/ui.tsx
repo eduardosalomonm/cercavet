@@ -212,6 +212,15 @@ export function Modal({
       dialog.close();
       document.body.style.overflow = overflow;
       previous?.focus();
+      // Closed by saving or the close button: drop the reserved step so the
+      // next Back leaves the page at once. A dialog opening in its place keeps it.
+      window.setTimeout(() => {
+        if (
+          history.state?.cercavetFormStep &&
+          !document.querySelector("dialog.modal[open]")
+        )
+          history.back();
+      });
     };
   }, []);
   return (

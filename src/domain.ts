@@ -161,9 +161,18 @@ export function shifts(state: ClinicState): Shift[] {
     : [{ professional: state.brand.veterinarian, from: "09:00", to: "20:00" }];
 }
 const id = () => crypto.randomUUID();
-function requireValue(condition: unknown, message: string): asserts condition {
+export function requireValue(
+  condition: unknown,
+  message: string,
+): asserts condition {
   if (!condition) throw new Error(message);
 }
+// Search ignores case and accents.
+export const searchKey = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es");
 export function blankNotes(today = localDate()): VisitNotes {
   return {
     summary: "",

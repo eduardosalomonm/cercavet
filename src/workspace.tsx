@@ -21,6 +21,7 @@ import {
   localDate,
   offsetDate,
   professionalOf,
+  searchKey,
   shifts,
   statusLabels,
 } from "./domain.ts";
@@ -484,15 +485,10 @@ export function Patients({
 }) {
   const [search, setSearch] = useState("");
   const [species, setSpecies] = useState("all");
-  const normalize = (v: string) =>
-    v
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("es");
   const patients = data.patients.filter(
     (p) =>
-      normalize(`${p.name} ${p.owner} ${p.breed}`).includes(
-        normalize(search),
+      searchKey(`${p.name} ${p.owner} ${p.breed}`).includes(
+        searchKey(search),
       ) &&
       (species === "all" || p.species === species),
   );

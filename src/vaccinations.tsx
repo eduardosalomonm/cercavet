@@ -10,6 +10,7 @@ import {
   Search,
   Syringe,
 } from "lucide-react";
+import { searchKey } from "./domain.ts";
 import type { ClinicState, Vaccination } from "./domain.ts";
 import { clinicToday, formatDate, offsetDate } from "./dates.ts";
 import { addVaccinationExamples } from "./seed.ts";
@@ -59,17 +60,12 @@ export function Vaccinations({
   const [editor, setEditor] = useState<Editor>(null);
   const [error, setError] = useState("");
   const today = clinicToday(data);
-  const normalize = (value: string) =>
-    value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("es");
   const records = data.vaccinations.filter((v) => {
     const patient = data.patients.find((p) => p.id === v.patientId)!;
     return (
       (!patientId || patientId === v.patientId) &&
-      normalize(`${patient.name} ${patient.owner} ${v.name} ${v.lot}`).includes(
-        normalize(search),
+      searchKey(`${patient.name} ${patient.owner} ${v.name} ${v.lot}`).includes(
+        searchKey(search),
       )
     );
   });

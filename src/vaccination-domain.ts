@@ -1,3 +1,4 @@
+import { requireValue } from "./domain.ts";
 import type { ClinicState, Followup, Vaccination } from "./domain.ts";
 import { clinicToday, formatDate, offsetDate, validDay } from "./dates.ts";
 
@@ -10,10 +11,6 @@ export const vaccineStatusLabels = {
   completed: "Dosis siguiente registrada",
 };
 export type VaccineStatus = keyof typeof vaccineStatusLabels;
-
-function requireValue(condition: unknown, message: string): asserts condition {
-  if (!condition) throw new Error(message);
-}
 
 export function vaccinationStatus(
   state: ClinicState,
@@ -78,6 +75,8 @@ function checkDates(
   );
 }
 
+// Duplicate doses ignore case and spacing but keep accents, so stored data
+// accepted before stays readable.
 const normalize = (value: string) => value.trim().toLocaleLowerCase("es");
 function duplicateDose(
   state: ClinicState,

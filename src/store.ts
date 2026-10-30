@@ -6,12 +6,26 @@ import { migrateDemoIdentity } from "./identity.ts";
 
 export const CLINIC_SAVED_EVENT = "cercavet:stored";
 
+// The last stored text this tab read or wrote. Saving a draft on every
+// keystroke then skips a full parse unless another tab changed the data.
+let stored: { raw: string; state: ClinicState } | undefined;
+export function readStored(raw: string): ClinicState {
+  if (stored?.raw !== raw)
+    stored = { raw, state: migrateDemoIdentity(parseState(raw)) };
+  return stored.state;
+}
+function writeStored(state: ClinicState) {
+  const raw = JSON.stringify(state);
+  localStorage.setItem(STORAGE_KEY, raw);
+  stored = { raw, state };
+}
+
 export function useClinic() {
   const [initial] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return {
-        data: raw ? migrateDemoIdentity(parseState(raw)) : createDemo(),
+        data: raw ? readStored(raw) : createDemo(),
         error: "",
       };
     } catch (error) {
@@ -44,11 +58,8 @@ export function useClinic() {
         if (loadError)
           throw new Error("Recupera los datos guardados antes de continuar.");
         const raw = localStorage.getItem(STORAGE_KEY);
-        const latest = raw
-          ? migrateDemoIdentity(parseState(raw))
-          : current.current;
-        const next = change(latest);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        const next = change(raw ? readStored(raw) : current.current);
+        writeStored(next);
         current.current = next;
         setData(next);
         // A successful local save also clears unsaved-form protection when
@@ -69,7 +80,7 @@ export function useClinic() {
   const reset = () => {
     try {
       const next = restoreDemo(current.current);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      writeStored(next);
       current.current = next;
       setData(next);
       setLoadError("");
@@ -88,9 +99,7 @@ export function useClinic() {
     const listener = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
       try {
-        const next = event.newValue
-          ? migrateDemoIdentity(parseState(event.newValue))
-          : createDemo();
+        const next = event.newValue ? readStored(event.newValue) : createDemo();
         current.current = next;
         setData(next);
         setLoadError("");

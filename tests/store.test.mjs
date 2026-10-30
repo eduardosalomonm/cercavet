@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createDemo, restoreDemo } from "../src/seed.ts";
-import { bookAppointment, saveBrand, shifts } from "../src/domain.ts";
+import { bookAppointment, parseState, saveBrand, shifts } from "../src/domain.ts";
 
 test("restoring examples keeps a renamed vet consistent with the schedule", () => {
   let state = createDemo();
@@ -21,4 +21,22 @@ test("restoring examples keeps a renamed vet consistent with the schedule", () =
       }),
     /ocupado/,
   );
+});
+
+test("saving reuses the state this tab already read from the same stored text", async () => {
+  const { readStored } = await import("../src/store.ts");
+  const raw = JSON.stringify(createDemo());
+  const first = readStored(raw);
+  assert.equal(readStored(raw), first);
+  const changed = readStored(raw.replace('"Milo"', '"Milo II"'));
+  assert.notEqual(changed, first);
+  assert.equal(changed.patients[0].name, "Milo II");
+});
+
+test("stored data with the same dose twice is still rejected", () => {
+  const state = createDemo();
+  const copy = { ...state.vaccinations[0], id: "copia", lot: ` ${state.vaccinations[0].lot.toUpperCase()} ` };
+  const followup = { ...state.followups.find((f) => f.vaccinationId === state.vaccinations[0].id), id: "f-copia", vaccinationId: "copia" };
+  const raw = JSON.stringify({ ...state, vaccinations: [...state.vaccinations, copy], followups: [...state.followups, followup] });
+  assert.throws(() => parseState(raw), /dosis duplicadas/);
 });

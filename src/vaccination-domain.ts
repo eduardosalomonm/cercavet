@@ -302,66 +302,73 @@ export function validateVaccinationState(state: ClinicState): void {
   const successors = state.vaccinations.flatMap((v) =>
     v.previousDoseId ? [v.previousDoseId] : [],
   );
+  const completed = new Set(successors);
   requireValue(
-    new Set(successors).size === successors.length,
+    completed.size === successors.length,
     "Hay dosis siguientes duplicadas.",
   );
+  const patientIds = new Set(state.patients.map((p) => p.id));
+  const appointments = new Map(state.appointments.map((a) => [a.id, a]));
+  const consultations = new Map(state.consultations.map((c) => [c.id, c]));
+  const doses = new Set(
+    state.vaccinations.map((v) =>
+      JSON.stringify([
+        v.patientId,
+        normalize(v.name),
+        v.administeredOn,
+        normalize(v.lot),
+      ]),
+    ),
+  );
   requireValue(
-    state.vaccinations.every((v) => {
-      const previous = v.previousDoseId
-        ? vaccines.get(v.previousDoseId)
-        : undefined;
-      return (
-        state.patients.some((p) => p.id === v.patientId) &&
-        (!v.previousDoseId ||
-          (previous &&
-            previous.patientId === v.patientId &&
-            normalize(previous.name) === normalize(v.name) &&
-            previous.administeredOn < v.administeredOn)) &&
-        (!v.consultationId ||
-          state.consultations.some(
-            (c) =>
-              c.id === v.consultationId &&
-              state.appointments.some(
-                (a) => a.id === c.appointmentId && a.patientId === v.patientId,
-              ),
-          )) &&
-        !duplicateDose(state, v, v.id)
-      );
-    }),
+    doses.size === state.vaccinations.length &&
+      state.vaccinations.every((v) => {
+        const previous = v.previousDoseId
+          ? vaccines.get(v.previousDoseId)
+          : undefined;
+        return (
+          patientIds.has(v.patientId) &&
+          (!v.previousDoseId ||
+            (previous &&
+              previous.patientId === v.patientId &&
+              normalize(previous.name) === normalize(v.name) &&
+              previous.administeredOn < v.administeredOn)) &&
+          (!v.consultationId ||
+            appointments.get(
+              consultations.get(v.consultationId)?.appointmentId ?? "",
+            )?.patientId === v.patientId)
+        );
+      }),
     "Hay vínculos incompletos o dosis duplicadas en las vacunaciones.",
   );
   const followups = state.followups.filter((f) => f.source === "vaccination");
+  const followed = new Set(followups.map((f) => f.vaccinationId));
   requireValue(
-    new Set(followups.map((f) => f.vaccinationId)).size === followups.length &&
+    followed.size === followups.length &&
       followups.every((f) => {
         const v = vaccines.get(f.vaccinationId);
-        const completed = successors.includes(f.vaccinationId);
         return (
           v &&
           v.patientId === f.patientId &&
           v.nextDueOn === f.dueDate &&
-          (completed
+          (completed.has(f.vaccinationId)
             ? f.status === "closed" && f.closeReason === "dose-recorded"
             : !f.closeReason)
         );
       }) &&
-      state.vaccinations.every((v) =>
-        followups.some((f) => f.vaccinationId === v.id),
-      ),
+      state.vaccinations.every((v) => followed.has(v.id)),
     "Hay seguimientos de vacunación duplicados o incompletos.",
   );
   requireValue(
-    state.followups.every(
-      (f) =>
+    state.followups.every((f) => {
+      const a = f.newAppointmentId
+        ? appointments.get(f.newAppointmentId)
+        : undefined;
+      return (
         !f.newAppointmentId ||
-        state.appointments.some(
-          (a) =>
-            a.id === f.newAppointmentId &&
-            a.patientId === f.patientId &&
-            a.previousFollowupId === f.id,
-        ),
-    ),
+        (a?.patientId === f.patientId && a.previousFollowupId === f.id)
+      );
+    }),
     "La reserva vinculada al seguimiento no es válida.",
   );
 }

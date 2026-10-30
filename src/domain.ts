@@ -623,7 +623,8 @@ export function parseState(raw: string): ClinicState {
           typeof a.duration === "number" &&
           Number.isFinite(Date.parse(a.date)) &&
           Object.hasOwn(statusLabels, a.status) &&
-          (a.professional === undefined || typeof a.professional === "string") &&
+          (a.professional === undefined ||
+            typeof a.professional === "string") &&
           (a.urgent === undefined || typeof a.urgent === "boolean"),
       ),
     "No se pueden leer las citas guardadas.",
@@ -687,25 +688,19 @@ export function parseState(raw: string): ClinicState {
     "No se pueden leer los borradores guardados.",
   );
   const state = x as unknown as ClinicState;
+  const patientIds = new Set(state.patients.map((p) => p.id));
+  const appointments = new Map(state.appointments.map((a) => [a.id, a]));
+  const consultations = new Map(state.consultations.map((c) => [c.id, c]));
   requireValue(
-    state.appointments.every((a) =>
-      state.patients.some((p) => p.id === a.patientId),
-    ) &&
-      state.consultations.every((c) =>
-        state.appointments.some((a) => a.id === c.appointmentId),
-      ) &&
+    state.appointments.every((a) => patientIds.has(a.patientId)) &&
+      state.consultations.every((c) => appointments.has(c.appointmentId)) &&
       state.followups.every(
         (f) =>
-          state.patients.some((p) => p.id === f.patientId) &&
+          patientIds.has(f.patientId) &&
           (f.source === "vaccination" ||
-            state.consultations.some(
-              (c) =>
-                c.id === f.consultationId &&
-                state.appointments.some(
-                  (a) =>
-                    a.id === c.appointmentId && a.patientId === f.patientId,
-                ),
-            )),
+            appointments.get(
+              consultations.get(f.consultationId)?.appointmentId ?? "",
+            )?.patientId === f.patientId),
       ),
     "Hay registros incompletos en los datos guardados.",
   );

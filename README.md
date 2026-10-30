@@ -48,7 +48,7 @@ También se pueden añadir pacientes, buscar por nombre o propietario, consultar
 5. **Corregir fechas** exige un motivo, conserva los valores anteriores y actualiza el mismo seguimiento. Los mensajes ya registrados y las citas reservadas no cambian.
 6. Recargar mantiene registros, correcciones y relaciones. Los filtros separan vencidas, hoy, próximos 30 días, más adelante e histórico.
 
-Las fechas las indica el veterinario; no se calculan pautas médicas. La zona horaria se configura en **Identidad de la clínica**. Las demos nuevas usan `America/Caracas`; la actualización de datos antiguos conserva la zona del dispositivo para mantener la interpretación anterior. «Vencimiento» se refiere a la próxima dosis, no a caducidad de existencias.
+Las fechas las indica el veterinario; no se calculan pautas médicas. La zona horaria se configura en **Identidad de la clínica**. Las demos nuevas usan la zona del navegador del visitante (o `Europe/Madrid` si no se puede leer); la actualización de datos antiguos conserva la zona del dispositivo para mantener la interpretación anterior. «Vencimiento» se refiere a la próxima dosis, no a caducidad de existencias.
 
 ## Marca blanca
 

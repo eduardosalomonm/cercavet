@@ -110,7 +110,7 @@ test("vaccination dates and links are validated before creating records", () => 
 });
 
 test("due states include today, the 30-day boundary and the clinic's midnight", () => {
-  const state = createDemo();
+  const state = createDemo("America/Caracas");
   const v = state.vaccinations[0];
   assert.equal(
     clinicToday(state, new Date("2026-10-18T02:00:00Z")),

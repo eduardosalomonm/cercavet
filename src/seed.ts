@@ -11,8 +11,21 @@ import {
 } from "./domain.ts";
 import type { Appointment, ClinicState, Patient } from "./domain.ts";
 import { registerVaccination } from "./vaccination-domain.ts";
+import { validTimeZone } from "./dates.ts";
 
-export function createDemo(timeZone = "America/Caracas"): ClinicState {
+// The public demo is aimed at Spain: use the visitor's zone, or Madrid.
+export function visitorTimeZone() {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (validTimeZone(zone)) return zone;
+  } catch {
+    // Fall back below.
+  }
+  return "Europe/Madrid";
+}
+
+
+export function createDemo(timeZone = visitorTimeZone()): ClinicState {
   const today = clinicToday({ timeZone });
   const day = (n: number) => offsetDate(n, today);
   const patients: Patient[] = [

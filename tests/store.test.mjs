@@ -40,3 +40,8 @@ test("stored data with the same dose twice is still rejected", () => {
   const raw = JSON.stringify({ ...state, vaccinations: [...state.vaccinations, copy], followups: [...state.followups, followup] });
   assert.throws(() => parseState(raw), /dosis duplicadas/);
 });
+
+test("new demos follow the visitor's clock", () => {
+  assert.equal(createDemo().timeZone, Intl.DateTimeFormat().resolvedOptions().timeZone);
+  assert.equal(createDemo("Europe/Madrid").timeZone, "Europe/Madrid");
+});
